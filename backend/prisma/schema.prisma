@@ -1,0 +1,119 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  binaryTargets   = ["native", "windows", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  medico
+  recepcionista
+  paciente
+}
+
+enum ConsultaStatus {
+  agendado
+  cancelado
+  realizado
+}
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  document    String   @unique @db.VarChar(11)
+  birthdate   DateTime @db.Date
+  phone       String?  @db.VarChar(15)
+  postal_code String   @db.VarChar(8)
+  email       String   @unique @db.VarChar(255)
+  password    String?  @db.VarChar(255)
+  role        Role
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
+
+  // relations
+  Medico        Medico?
+  Paciente      Paciente?
+  Recepcionista Recepcionista?
+
+  @@map("users")
+}
+
+model Medico {
+  id         Int     @id
+  specialty  String  @db.VarChar(100)
+  user       User    @relation(fields: [id], references: [id], onDelete: Cascade)
+  consultas  Consulta[]
+  registros  RegistroMedico[]
+  horarios   HorarioMedico[]
+
+  @@map("medicos")
+}
+
+model Paciente {
+  id         Int     @id
+  history    String?
+  allergies  String?
+  user       User    @relation(fields: [id], references: [id], onDelete: Cascade)
+  consultas  Consulta[]
+  registros  RegistroMedico[]
+
+  @@map("pacientes")
+}
+
+model Recepcionista {
+  id   Int  @id
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("recepcionistas")
+}
+
+model Consulta {
+  id          String           @id @default(cuid())
+  paciente_id Int
+  medico_id   Int
+  date_time   DateTime
+  status      ConsultaStatus
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+  medico   Medico   @relation(fields: [medico_id], references: [id], onDelete: Cascade)
+  registros RegistroMedico[]
+
+  @@map("consultas")
+}
+
+model RegistroMedico {
+  id          String     @id @default(cuid())
+  consulta_id String
+  medico_id   Int
+  paciente_id Int
+  observacoes String?
+  diagnostico String?
+  tratamento  String?
+  created_at  DateTime @default(now())
+
+  consulta Consulta @relation(fields: [consulta_id], references: [id], onDelete: Cascade)
+  medico   Medico   @relation(fields: [medico_id], references: [id], onDelete: Cascade)
+  paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
+
+  @@map("registros_medicos")
+}
+
+model HorarioMedico {
+  id         String   @id @default(cuid())
+  medico_id  Int
+  start_time String @db.VarChar(5)
+  end_time   String @db.VarChar(5) 
+
+  medico Medico @relation(fields: [medico_id], references: [id], onDelete: Cascade)
+
+  @@map("horarios_medicos")
+}

@@ -1,0 +1,114 @@
+.fc {
+  --fc-border-color: var(--border);
+  --fc-today-bg-color: var(--accent);
+  --fc-page-bg-color: var(--background);
+}
+
+.fc .fc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.fc .fc-button {
+  background-color: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--secondary-foreground);
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s;
+  box-shadow: none;
+  text-transform: none;
+}
+
+.fc .fc-button-primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.fc .fc-button:hover {
+  background-color: var(--accent);
+  color: var(--accent-foreground);
+  opacity: 1;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: hsl(var(--primary) / 0.9);
+  border-color: hsl(var(--primary) / 0.9);
+  opacity: 1;
+}
+
+.fc .fc-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fc .fc-icon {
+  font-size: 1.25rem;
+}
+
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border: 1px solid var(--border);
+}
+
+.fc .fc-col-header-cell {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.75rem 0;
+  text-transform: uppercase;
+}
+
+.fc .fc-col-header-cell-cushion {
+  padding: 0.25rem;
+}
+
+.fc .fc-daygrid-day {
+  padding: 4px;
+}
+
+.fc .fc-daygrid-day-number {
+  padding: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.fc .fc-day-today {
+  background-color: var(--fc-today-bg-color);
+  border-radius: 0; /* Remove o radius para preencher a célula */
+}
+
+.fc .fc-day-today .fc-daygrid-day-number {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.fc .fc-daygrid-event {
+  background-color: var(--muted);
+  border: none;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  padding: 0;
+  margin-top: 5px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.fc-event-main-frame {
+  width: 100%;
+}

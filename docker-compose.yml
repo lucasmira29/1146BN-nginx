@@ -1,4 +1,11 @@
-version: '3.0'
+version: "3.0"
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
 
 services:
   service-discovery:
@@ -12,45 +19,19 @@ services:
       - ~/.m2:/root/.m2
     networks:
       - app-network
-  demo1:
-    build:
-      context: ./demo1
-    container_name: demo1
+
+  rabbitmq:
+    image: "rabbitmq:3.13-management"
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
     ports:
-      - "8081:8080"
-    volumes:
-      - ./demo1:/app
-      - ~/.m2:/root/.m2
-    depends_on:
-      - service-discovery
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - app-network
-  demo1-2:
-    build:
-      context: ./demo1
-    container_name: demo1-2
-    ports:
-      - "8084:8080"
-    volumes:
-      - ./demo1:/app
-      - ~/.m2:/root/.m2
-    depends_on:
-      - service-discovery
-    networks:
-      - app-network
-  demo2:
-    build:
-      context: ./demo2
-    container_name: demo2
-    ports:
-      - "8082:8080"
-    volumes:
-      - ./demo2:/app
-      - ~/.m2:/root/.m2
-    depends_on:
-      - service-discovery
-    networks:
-      - app-network
+
   auth-service:
     build:
       context: ./auth-service
@@ -63,8 +44,12 @@ services:
     depends_on:
       - service-discovery
       - rabbitmq
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8080/eureka
+      - SPRING_RABBITMQ_HOST=rabbitmq
     networks:
       - app-network
+
   gateway-service:
     build:
       context: ./gateway-service
@@ -76,37 +61,82 @@ services:
       - ~/.m2:/root/.m2
     depends_on:
       - service-discovery
-      - demo1
-      - demo2
-      - demo1-2
       - auth-service
-    networks:
-      - app-network
-  rabbitmq:
-    image: "rabbitmq:4.1.4-management"
-    container_name: rabbitmq
+      - clinica-service
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
-    ports:
-      - "5672:5672"
-      - "15672:15672"
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8080/eureka
+      - JWT_SECRET=UmaSenhaLongaParaGerarHash
     networks:
       - app-network
-  
-  # nginx:
-  #   image: nginx:latest
-  #   container_name: nginx
-  #   ports:
-  #     - "80:80"
-  #   volumes:
-  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     - demo1
-  #     - demo2
-  #   networks:
-  #     - app-network
-  
-networks:
-  app-network:
-    driver: bridge
+
+  clinica-db:
+    image: mysql:8
+    container_name: clinica-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: prisma_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  clinica-service:
+    build:
+      context: ./backend
+    container_name: clinica-service
+    depends_on:
+      - clinica-db
+      - service-discovery
+    environment:
+      - DATABASE_URL=mysql://root:root@clinica-db:3306/prisma_db
+      - TZ=America/Sao_Paulo
+      - PORT=3000
+
+      - EUREKA_HOST=service-discovery
+      - EUREKA_PORT=8080
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo 'Aguardando o banco de dados clinica-db...' &&
+        /usr/local/bin/wait-for-it clinica-db:3306 --timeout=60 &&
+        echo 'Banco de dados pronto.' &&
+        npx prisma generate &&
+        echo 'Aplicando migrações do Prisma...' &&
+        npx prisma migrate deploy &&
+        echo 'Populando o banco de dados (seed)...' &&
+        npx prisma db seed &&
+        echo 'Iniciando o clinica-service (Node.js)...' &&
+        npm start
+      "
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:80
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    stdin_open: true
+    tty: true
+    networks:
+      - app-network
+    depends_on:
+      - gateway-service
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - gateway-service
+      - frontend
+    networks:
+      - app-network
