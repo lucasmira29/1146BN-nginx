@@ -1,70 +1,67 @@
 package com.example.auth_service.domain.auth;
 
-import com.example.auth_service.domain.auth.vo.ExpiresAt;
-import com.example.auth_service.domain.auth.vo.HashedToken;
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 import java.time.Instant;
 import java.util.UUID;
 
-@Table(name = "magic_link")
+import com.example.auth_service.domain.auth.vo.ExpiresAt;
+import com.example.auth_service.domain.auth.vo.HashedToken;
+import com.example.auth_service.domain.user.User.UserId;
+import com.example.auth_service.support.Digests;
+
+import jakarta.persistence.Embedded;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Embeddable;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 @Entity
-@NoArgsConstructor
+@Table(name = "magic_links")
 @Getter
-@Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MagicLink {
 
-    @Id
-    @Column(nullable = false, updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-
-    @Column(nullable = false)
-    private UUID userId;
+    @EmbeddedId
+    private MagicLinkId id;
 
     @Embedded
-    private HashedToken hashedToken;
+    private UserId userId;
+
+    @Embedded
+    private HashedToken tokenHash;
 
     @Embedded
     private ExpiresAt expiresAt;
 
-    @Column
-    private Instant consumedAt;
-
-    public MagicLink(UUID userId, HashedToken hashedToken, ExpiresAt expiresAt) {
+    private MagicLink(MagicLinkId id, UserId userId, HashedToken tokenHash, ExpiresAt expiresAt) {
+        this.id = id;
         this.userId = userId;
-        this.hashedToken = hashedToken;
+        this.tokenHash = tokenHash;
         this.expiresAt = expiresAt;
     }
 
-    public static MagicLink issueForLogin(UUID userId, HashedToken hashedToken, ExpiresAt expiresAt) {
-        return new MagicLink(userId, hashedToken, expiresAt);
+    public static MagicLink create(UserId userId, String token, long validityInSeconds) {
+        return new MagicLink(
+                new MagicLinkId(UUID.randomUUID()),
+                userId,
+                new HashedToken(Digests.sha256(token)),
+                new ExpiresAt(Instant.now().plusSeconds(validityInSeconds)));
     }
 
-    public boolean isExpired(Instant now) {
-        return !expiresAt.isAfter(now);
-    }
+    @Embeddable
+    @Getter
+    @NoArgsConstructor(access = AccessLevel.PROTECTED)
+    public static class MagicLinkId {
+        private UUID value;
 
-    public boolean isConsumed() {
-        return this.consumedAt != null;
-    }
-
-    public boolean isValidAt(Instant now) {
-        return !this.isConsumed() && !this.isExpired(now);
-    }
-
-    public void consume(Instant now) {
-        if (this.isConsumed()) {
-            throw new IllegalStateException("Link consumido");
+        public MagicLinkId(UUID value) {
+            this.value = value;
         }
 
-        if (this.isExpired(now)) {
-            throw new IllegalStateException("Link expirado");
+        public UUID value() {
+            return value;
         }
-
-        this.consumedAt = now;
     }
 }

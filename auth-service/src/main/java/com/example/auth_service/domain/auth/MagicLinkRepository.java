@@ -9,6 +9,8 @@ import java.util.UUID;
 public interface MagicLinkRepository {
     MagicLink save(MagicLink magicLink);
 
-    Optional<MagicLink> findById(UUID id);
+    Optional<MagicLink> findById(MagicLink.MagicLinkId id);
     Optional<MagicLink> findValidByHash(String hashedToken, Instant now);
+    
+    void delete(MagicLink magicLink);
 }

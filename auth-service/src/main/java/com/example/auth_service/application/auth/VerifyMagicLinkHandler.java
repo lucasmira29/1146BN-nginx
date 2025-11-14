@@ -1,45 +1,45 @@
 package com.example.auth_service.application.auth;
 
+import java.time.Instant;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.auth_service.application.ports.TokenService;
-import com.example.auth_service.domain.auth.MagicLink;
+import com.example.auth_service.domain.auth.MagicLink; 
 import com.example.auth_service.domain.auth.MagicLinkRepository;
-import com.example.auth_service.domain.user.User;
 import com.example.auth_service.domain.user.UserRepository;
+import com.example.auth_service.interfaces.rest.dto.auth.MagicLinkVerifyRequest;
 import com.example.auth_service.interfaces.rest.dto.auth.TokenResponse;
 import com.example.auth_service.support.Digests;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.util.Optional;
-import java.util.UUID;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class VerifyMagicLinkHandler {
+
     private final MagicLinkRepository magicLinkRepository;
     private final UserRepository userRepository;
     private final TokenService tokenService;
 
-    public TokenResponse handle(String rawToken) {
-        String hash = Digests.sha256Hex(rawToken);
-        Instant now = Instant.now();
+    @Transactional
+    public TokenResponse handle(MagicLinkVerifyRequest request) {
+        var tokenHash = Digests.sha256(request.token());
 
-        Optional<MagicLink> linkOpt = magicLinkRepository.findValidByHash(hash, now);
-        MagicLink link = linkOpt.orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Link invalido ou expirado"));
+        var link = magicLinkRepository.findValidByHash(tokenHash, Instant.now())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired magic link"));
+        
+        var user = userRepository.findById(link.getUserId().value())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        UUID userId = link.getUserId();
-        User user = userRepository.findById(userId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.UNAUTHORIZED, "usuário não encontrado"));
+        magicLinkRepository.delete(link); 
 
-        link.consume(now);
-        magicLinkRepository.save(link);
-
-        TokenService.TokenPair pair = tokenService.issue(user);
-
-        return new TokenResponse(pair.token(), pair.refreshToken(), pair.expiresIn());
+        var tokenPair = tokenService.issue(user);
+        return new TokenResponse(
+            tokenPair.token(), 
+            tokenPair.refreshToken(), 
+            tokenPair.expiresIn()
+        );
     }
 }

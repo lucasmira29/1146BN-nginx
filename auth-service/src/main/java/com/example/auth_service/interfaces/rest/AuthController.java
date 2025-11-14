@@ -25,21 +25,21 @@ public class AuthController {
 
     @PostMapping("/login/password")
     public ResponseEntity<TokenResponse> loginWithPassword(@Valid @RequestBody PasswordLoginRequest request) {
-        TokenResponse token = passwordLoginHandler.handle(request.email(), request.password());
+        TokenResponse token = passwordLoginHandler.handle(request);
 
         return ResponseEntity.ok(token);
     }
 
     @PostMapping("/login/magic")
     public ResponseEntity<Void> requestMagic(@Valid @RequestBody MagicLinkRequest req) {
-        requestMagicLinkHandler.handle(req.email());
+        requestMagicLinkHandler.handle(req);
 
         return ResponseEntity.accepted().build();
     }
 
     @PostMapping("login/magic/verify")
     public ResponseEntity<TokenResponse> verifyMagic(@Valid @RequestBody MagicLinkVerifyRequest request) {
-        TokenResponse tokenResponse = verifyMagicLinkHandler.handle(request.token());
+        TokenResponse tokenResponse = verifyMagicLinkHandler.handle(request);
 
         return ResponseEntity.ok(tokenResponse);
     }

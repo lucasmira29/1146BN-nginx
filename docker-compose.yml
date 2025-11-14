@@ -65,7 +65,7 @@ services:
       - clinica-service
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8080/eureka
-      - JWT_SECRET=UmaSenhaLongaParaGerarHash
+      - JWT_SECRET=EsteEhUmSegredoMuitoLongoParaClinicaPerebentosComMaisDe512BitsDeTamanho
     networks:
       - app-network
 
@@ -140,3 +140,4 @@ services:
       - frontend
     networks:
       - app-network
+      

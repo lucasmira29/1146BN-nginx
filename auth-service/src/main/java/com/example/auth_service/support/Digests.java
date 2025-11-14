@@ -8,7 +8,7 @@ import java.security.MessageDigest;
 @NoArgsConstructor
 public class Digests {
 
-    public static String sha256Hex(String input) {
+    public static String sha256(String input) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] d = md.digest(input.getBytes(StandardCharsets.UTF_8));

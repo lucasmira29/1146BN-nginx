@@ -1,17 +1,16 @@
 package com.example.auth_service.application.auth;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.auth_service.application.ports.PasswordHasher;
 import com.example.auth_service.application.ports.TokenService;
-import com.example.auth_service.domain.user.User;
 import com.example.auth_service.domain.user.UserRepository;
 import com.example.auth_service.domain.user.vo.Email;
+import com.example.auth_service.interfaces.rest.dto.auth.PasswordLoginRequest;
 import com.example.auth_service.interfaces.rest.dto.auth.TokenResponse;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -21,20 +20,22 @@ public class PasswordLoginHandler {
     private final PasswordHasher passwordHasher;
     private final TokenService tokenService;
 
-    public TokenResponse handle(String emailRaw, String pwRaw) {
-        Email email = Email.of(emailRaw);
-        Optional<User> userOptional = userRepository.findByEmail(email.getValue());
+    @Transactional(readOnly = true)
+    public TokenResponse handle(PasswordLoginRequest request) {
+        var email = new Email(request.email());
+        
+        var user = userRepository.findByEmail(email.value())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password: " + email.value()));
 
-        if (!userOptional.isPresent()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credencial invalido");
+        if (!passwordHasher.match(request.password(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid email or password");
         }
 
-        User user = userOptional.get();
-        if (!passwordHasher.match(pwRaw, user.getPassword())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credencial invalido");
-        }
-
-        TokenService.TokenPair pair = tokenService.issue(user);
-        return new TokenResponse(pair.token(), pair.refreshToken(), pair.expiresIn());
+        var tokenPair = tokenService.issue(user);
+        return new TokenResponse(
+            tokenPair.token(), 
+            tokenPair.refreshToken(), 
+            tokenPair.expiresIn()
+        );
     }
 }

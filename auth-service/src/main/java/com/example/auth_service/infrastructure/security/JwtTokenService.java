@@ -1,46 +1,63 @@
 package com.example.auth_service.infrastructure.security;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.algorithms.Algorithm;
+import java.nio.charset.StandardCharsets;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import javax.crypto.SecretKey;
+
+import org.springframework.stereotype.Service;
+
 import com.example.auth_service.application.ports.TokenService;
 import com.example.auth_service.domain.user.User;
 import com.example.auth_service.infrastructure.config.JwtProperties;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Date;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
-@Component
-@RequiredArgsConstructor
+@Service
 public class JwtTokenService implements TokenService {
 
-    private final JwtProperties props;
+    private final SecretKey key;
+    private final long accessTtlMillis;
+    private final long refreshTtlMillis;
 
+    public JwtTokenService(JwtProperties jwtProperties) {
+
+        this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes(StandardCharsets.UTF_8));
+        this.accessTtlMillis = TimeUnit.SECONDS.toMillis(jwtProperties.getAccessTtlSeconds());
+        this.refreshTtlMillis = TimeUnit.SECONDS.toMillis(jwtProperties.getRefreshTtlSeconds());
+    }
 
     @Override
     public TokenPair issue(User user) {
-        if  (props.getSecret() == null || props.getSecret().isEmpty()) {
-            throw new IllegalArgumentException("secret is required (jwt.secret)");
-        }
+        var nowMillis = System.currentTimeMillis();
+        var now = new Date(nowMillis);
 
-        Instant now = Instant.now();
-        Algorithm algorithm = Algorithm.HMAC256(props.getSecret().getBytes(StandardCharsets.UTF_8));
+     
+        var roles = List.of(user.getRole().getValue().name());
 
-        Instant acessExp = now.plusSeconds(props.getAccessTtlSeconds());
-        String acessToken = JWT.create()
-                .withIssuer(props.getIssuer())
-                .withAudience(props.getAudience())
-                .withSubject(user.getId().toString())
-                .withIssuedAt(Date.from(now))
-                .withExpiresAt(Date.from(acessExp))
-                .withClaim("type", "access")
-                .withClaim("email", user.getEmail().getValue())
-                .withClaim("role", user.getRole().getValue().name())
-                .withClaim("level", user.getRole().getValue().getLevel())
-                .sign(algorithm);
+        // --- Access Token ---
+        var accessExpiration = new Date(nowMillis + this.accessTtlMillis);
+        var accessToken = Jwts.builder()
+                .subject(user.getId().value().toString())
+                .claim("name", user.getName())
+                .claim("roles", roles)
+                .issuedAt(now)
+                .expiration(accessExpiration)
+                .signWith(key)
+                .compact();
 
-        return new TokenPair(acessToken, "", (int) props.getAccessTtlSeconds());
+
+        var refreshExpiration = new Date(nowMillis + this.refreshTtlMillis);
+        var refreshToken = Jwts.builder()
+                .subject(user.getId().value().toString())
+                .issuedAt(now)
+                .expiration(refreshExpiration)
+                .signWith(key) 
+                .compact();
+
+        return new TokenPair(accessToken, refreshToken, this.accessTtlMillis);
     }
 }
