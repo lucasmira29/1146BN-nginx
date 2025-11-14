@@ -23,7 +23,7 @@ enum ConsultaStatus {
 }
 
 model User {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @db.VarChar(36) 
   name        String   @db.VarChar(100)
   document    String   @unique @db.VarChar(11)
   birthdate   DateTime @db.Date
@@ -45,43 +45,43 @@ model User {
 }
 
 model Medico {
-  id         Int     @id
-  specialty  String  @db.VarChar(100)
-  user       User    @relation(fields: [id], references: [id], onDelete: Cascade)
-  consultas  Consulta[]
-  registros  RegistroMedico[]
-  horarios   HorarioMedico[]
+  id        String   @id @db.VarChar(36)
+  specialty String   @db.VarChar(100)
+  user      User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  consultas Consulta[]
+  registros RegistroMedico[]
+  horarios  HorarioMedico[]
 
   @@map("medicos")
 }
 
 model Paciente {
-  id         Int     @id
-  history    String?
-  allergies  String?
-  user       User    @relation(fields: [id], references: [id], onDelete: Cascade)
-  consultas  Consulta[]
-  registros  RegistroMedico[]
+  id        String  @id @db.VarChar(36)
+  history   String?
+  allergies String?
+  user      User     @relation(fields: [id], references: [id], onDelete: Cascade)
+  consultas Consulta[]
+  registros RegistroMedico[]
 
   @@map("pacientes")
 }
 
 model Recepcionista {
-  id   Int  @id
-  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+  id   String @id @db.VarChar(36)
+  user User   @relation(fields: [id], references: [id], onDelete: Cascade)
 
   @@map("recepcionistas")
 }
 
 model Consulta {
-  id          String           @id @default(cuid())
-  paciente_id Int
-  medico_id   Int
+  id          String         @id @default(cuid())
+  paciente_id String         @db.VarChar(36)
+  medico_id   String         @db.VarChar(36)
   date_time   DateTime
   status      ConsultaStatus
   description String?
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
 
   paciente Paciente @relation(fields: [paciente_id], references: [id], onDelete: Cascade)
   medico   Medico   @relation(fields: [medico_id], references: [id], onDelete: Cascade)
@@ -91,10 +91,12 @@ model Consulta {
 }
 
 model RegistroMedico {
-  id          String     @id @default(cuid())
+  id          String   @id @default(cuid())
   consulta_id String
-  medico_id   Int
-  paciente_id Int
+
+  medico_id   String   @db.VarChar(36)
+
+  paciente_id String   @db.VarChar(36)
   observacoes String?
   diagnostico String?
   tratamento  String?
@@ -108,10 +110,11 @@ model RegistroMedico {
 }
 
 model HorarioMedico {
-  id         String   @id @default(cuid())
-  medico_id  Int
+  id        String @id @default(cuid())
+
+  medico_id String @db.VarChar(36)
   start_time String @db.VarChar(5)
-  end_time   String @db.VarChar(5) 
+  end_time   String @db.VarChar(5)
 
   medico Medico @relation(fields: [medico_id], references: [id], onDelete: Cascade)
 

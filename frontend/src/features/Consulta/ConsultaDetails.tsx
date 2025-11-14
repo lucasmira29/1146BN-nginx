@@ -1,18 +1,18 @@
-import { DatePicker } from "@/components/DatePicker";
-import Modal from "@/components/Modal";
-import SelectInput from "@/components/SelectInput";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import useAuth from "@/hooks/useAuthContext";
-import api from "@/services/api";
-import type { Consulta } from "@/types/consulta";
-import { formatPhone } from "@/utils/formatters";
-import { format } from "date-fns";
-import { ArrowLeft, Check } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router";
-import { toast } from "react-toastify";
+import { DatePicker } from '@/components/DatePicker';
+import Modal from '@/components/Modal';
+import SelectInput from '@/components/SelectInput';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import useAuth from '@/hooks/useAuthContext';
+import api from '@/services/api';
+import type { Consulta } from '@/types/consulta';
+import { formatPhone } from '@/utils/formatters';
+import { format } from 'date-fns';
+import { ArrowLeft, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { toast } from 'react-toastify';
 
 function ConsultaDetails() {
   const { id } = useParams();
@@ -20,11 +20,11 @@ function ConsultaDetails() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isOpenCancelar, setIsOpenCancelar] = useState<boolean>(false);
   const [isOpenRemarcar, setIsOpenRemarcar] = useState<boolean>(false);
-  const [observacoes, setObservacoes] = useState("");
-  const [diagnostico, setDiagnostico] = useState("");
-  const [tratamento, setTratamento] = useState("");
+  const [observacoes, setObservacoes] = useState('');
+  const [diagnostico, setDiagnostico] = useState('');
+  const [tratamento, setTratamento] = useState('');
   const [novaData, setNovaData] = useState<Date | undefined>();
-  const [novoHorario, setNovoHorario] = useState<string>("");
+  const [novoHorario, setNovoHorario] = useState<string>('');
   const [horariosDisponiveis, setHorariosDisponiveis] = useState<string[]>([]);
 
   const { user } = useAuth();
@@ -40,9 +40,10 @@ function ConsultaDetails() {
       if (!consulta?.medico.id || !novaData) return;
 
       try {
-        const dataFormatada = format(novaData, "yyyy-MM-dd");
+        const dataFormatada = format(novaData, 'yyyy-MM-dd');
+        // MUDANÇA: Adicionado prefixo /api/clinica
         const response = await api.get(
-          `/horarios/disponivel/${consulta.medico.id}?data=${dataFormatada}`
+          `/api/clinica/horarios/disponivel/${consulta.medico.id}?data=${dataFormatada}`
         );
         setHorariosDisponiveis(response.data.horarios || []);
       } catch (error) {
@@ -51,14 +52,15 @@ function ConsultaDetails() {
       }
     }
 
-    setNovoHorario("");
+    setNovoHorario('');
     setHorariosDisponiveis([]);
     fetchHorariosDisponiveis();
   }, [novaData, consulta?.medico.id]);
 
   async function fetchConsulta() {
     try {
-      const response = await api.get(`/consultas/${id}`);
+      // MUDANÇA: Adicionado prefixo /api/clinica
+      const response = await api.get(`/api/clinica/consultas/${id}`);
       setConsulta(response.data);
     } catch (error) {
       console.error(error);
@@ -68,14 +70,16 @@ function ConsultaDetails() {
   async function confirmConsulta(id: string | undefined) {
     try {
       if (!id || !observacoes || !diagnostico || !tratamento) {
-        return toast.warn("Campos obrigatórios faltando!");
+        return toast.warn('Campos obrigatórios faltando!');
       }
 
-      await api.put(`/consultas/${id}`, {
-        status: "realizado",
+      // MUDANÇA: Adicionado prefixo /api/clinica
+      await api.put(`/api/clinica/consultas/${id}`, {
+        status: 'realizado',
       });
 
-      await api.post(`/registros-medicos`, {
+      // MUDANÇA: Adicionado prefixo /api/clinica
+      await api.post(`/api/clinica/registros-medicos`, {
         consulta_id: id,
         medico_id: consulta?.medico.id,
         paciente_id: consulta?.paciente.id,
@@ -85,7 +89,7 @@ function ConsultaDetails() {
       });
 
       fetchConsulta();
-      toast.success("Consulta Confirmada!");
+      toast.success('Consulta Confirmada!');
       setIsOpen(false);
     } catch (error) {
       console.error(error);
@@ -96,12 +100,13 @@ function ConsultaDetails() {
     try {
       if (!id) return;
 
-      await api.put(`/consultas/${id}`, {
-        status: "cancelado",
+      // MUDANÇA: Adicionado prefixo /api/clinica
+      await api.put(`/api/clinica/consultas/${id}`, {
+        status: 'cancelado',
       });
 
       fetchConsulta();
-      toast.success("Consulta Cancelada!");
+      toast.success('Consulta Cancelada!');
       setIsOpenCancelar(false);
     } catch (error) {
       console.error(error);
@@ -110,39 +115,40 @@ function ConsultaDetails() {
 
   async function remarcarConsulta() {
     if (!id || !novaData || !novoHorario) {
-      return toast.warn("Selecione uma nova data e horário.");
+      return toast.warn('Selecione uma nova data e horário.');
     }
 
     try {
-      const novaDataFormatada = format(novaData, "yyyy-MM-dd");
+      const novaDataFormatada = format(novaData, 'yyyy-MM-dd');
 
-      await api.put(`/consultas/${id}`, {
+      // MUDANÇA: Adicionado prefixo /api/clinica
+      await api.put(`/api/clinica/consultas/${id}`, {
         date_time: new Date(
           `${novaDataFormatada}T${novoHorario}:00`
         ).toISOString(),
-        status: "agendado",
+        status: 'agendado',
       });
 
-      toast.success("Consulta remarcada com sucesso!");
+      toast.success('Consulta remarcada com sucesso!');
       setIsOpenRemarcar(false);
       fetchConsulta();
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao remarcar a consulta.");
+      toast.error('Erro ao remarcar a consulta.');
     }
   }
 
   const renderStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
-      agendado: "bg-blue-100 text-blue-800",
-      realizado: "bg-green-100 text-green-800",
-      cancelado: "bg-red-100 text-red-800",
+      agendado: 'bg-blue-100 text-blue-800',
+      realizado: 'bg-green-100 text-green-800',
+      cancelado: 'bg-red-100 text-red-800',
     };
 
     return (
       <span
         className={`text-xs px-2 py-1 rounded-full font-medium ${
-          statusColors[status] || "bg-gray-100 text-gray-800"
+          statusColors[status] || 'bg-gray-100 text-gray-800'
         }`}
       >
         {status}
@@ -173,16 +179,16 @@ function ConsultaDetails() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-zinc-600">
               <div>
                 <p>
-                  <span className="font-medium text-zinc-700">Data:</span>{" "}
+                  <span className="font-medium text-zinc-700">Data:</span>{' '}
                   {consulta?.date_time}
                 </p>
-                <p className={consulta.description ? "" : "hidden"}>
-                  <span className="font-medium text-zinc-700">Descrição:</span>{" "}
+                <p className={consulta.description ? '' : 'hidden'}>
+                  <span className="font-medium text-zinc-700">Descrição:</span>{' '}
                   {consulta?.description}
                 </p>
               </div>
               <p>
-                <span className="font-medium text-zinc-700">Status:</span>{" "}
+                <span className="font-medium text-zinc-700">Status:</span>{' '}
                 {renderStatusBadge(consulta.status)}
               </p>
             </div>
@@ -192,26 +198,26 @@ function ConsultaDetails() {
             <h2 className="text-lg font-semibold text-zinc-800">Paciente</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-zinc-600">
               <p>
-                <span className="font-medium text-zinc-700">Nome:</span>{" "}
+                <span className="font-medium text-zinc-700">Nome:</span>{' '}
                 {consulta?.paciente.user.name}
               </p>
               <p>
-                <span className="font-medium text-zinc-700">Telefone:</span>{" "}
+                <span className="font-medium text-zinc-700">Telefone:</span>{' '}
                 {formatPhone(consulta?.paciente.user.phone)}
               </p>
               <p>
-                <span className="font-medium text-zinc-700">Email:</span>{" "}
+                <span className="font-medium text-zinc-700">Email:</span>{' '}
                 {consulta?.paciente.user.email}
               </p>
               {consulta?.paciente.history && (
                 <p className="sm:col-span-2">
-                  <span className="font-medium text-zinc-700">Histórico:</span>{" "}
+                  <span className="font-medium text-zinc-700">Histórico:</span>{' '}
                   {consulta.paciente.history}
                 </p>
               )}
               {consulta?.paciente.allergies && (
                 <p className="sm:col-span-2">
-                  <span className="font-medium text-zinc-700">Alergias:</span>{" "}
+                  <span className="font-medium text-zinc-700">Alergias:</span>{' '}
                   {consulta.paciente.allergies}
                 </p>
               )}
@@ -222,27 +228,27 @@ function ConsultaDetails() {
             <h2 className="text-lg font-semibold text-zinc-800">Médico</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-zinc-600">
               <p>
-                <span className="font-medium text-zinc-700">Nome:</span>{" "}
+                <span className="font-medium text-zinc-700">Nome:</span>{' '}
                 {consulta?.medico.user.name}
               </p>
               <p>
                 <span className="font-medium text-zinc-700">
                   Especialidade:
-                </span>{" "}
+                </span>{' '}
                 {consulta?.medico.specialty}
               </p>
               <p>
-                <span className="font-medium text-zinc-700">Telefone:</span>{" "}
+                <span className="font-medium text-zinc-700">Telefone:</span>{' '}
                 {formatPhone(consulta?.medico.user.phone)}
               </p>
               <p>
-                <span className="font-medium text-zinc-700">Email:</span>{" "}
+                <span className="font-medium text-zinc-700">Email:</span>{' '}
                 {consulta?.medico.user.email}
               </p>
             </div>
           </div>
 
-          {consulta.status === "realizado" &&
+          {consulta.status === 'realizado' &&
             consulta.registros?.length > 0 && (
               <div className="grid w-full gap-3">
                 <h2 className="text-lg font-semibold text-zinc-800">
@@ -256,25 +262,25 @@ function ConsultaDetails() {
                     <p className="sm:col-span-2">
                       <span className="font-medium text-zinc-700">
                         Data de Registro:
-                      </span>{" "}
-                      {new Date(registro.created_at).toLocaleString("pt-BR")}
+                      </span>{' '}
+                      {new Date(registro.created_at).toLocaleString('pt-BR')}
                     </p>
                     <p className="sm:col-span-2">
                       <span className="font-medium text-zinc-700">
                         Observações:
-                      </span>{" "}
+                      </span>{' '}
                       {registro.observacoes}
                     </p>
                     <p className="sm:col-span-2">
                       <span className="font-medium text-zinc-700">
                         Diagnóstico:
-                      </span>{" "}
+                      </span>{' '}
                       {registro.diagnostico}
                     </p>
                     <p className="sm:col-span-2">
                       <span className="font-medium text-zinc-700">
                         Tratamento:
-                      </span>{" "}
+                      </span>{' '}
                       {registro.tratamento}
                     </p>
                   </div>
@@ -282,9 +288,9 @@ function ConsultaDetails() {
               </div>
             )}
 
-          {consulta.status === "agendado" && (
+          {consulta.status === 'agendado' && (
             <div className="flex flex-wrap justify-end gap-3 mt-12">
-              {user?.role !== "medico" && (
+              {user?.role !== 'medico' && (
                 <>
                   <Button
                     variant="outline"
@@ -304,8 +310,7 @@ function ConsultaDetails() {
                 </>
               )}
 
-  
-              {user?.role === "medico" && (
+              {user?.role === 'medico' && (
                 <Button
                   className="flex items-center gap-2 cursor-pointer bg-green-500 hover:bg-green-700 text-white min-w-[120px]"
                   onClick={() => setIsOpen(true)}
@@ -410,7 +415,7 @@ function ConsultaDetails() {
                 onClick={() => {
                   setIsOpenRemarcar(false);
                   setNovaData(undefined);
-                  setNovoHorario("");
+                  setNovoHorario('');
                   setHorariosDisponiveis([]);
                 }}
                 className="cursor-pointer"
@@ -439,8 +444,8 @@ function ConsultaDetails() {
                 items={horariosDisponiveis}
                 placeholder={
                   horariosDisponiveis.length > 0
-                    ? "Selecione um horário"
-                    : "Selecione uma data primeiro"
+                    ? 'Selecione um horário'
+                    : 'Selecione uma data primeiro'
                 }
                 onChange={setNovoHorario}
               />

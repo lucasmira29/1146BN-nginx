@@ -1,3 +1,5 @@
+// 1146BN-nginx/backend/src/controllers/recepcionistaController.js
+
 import recepcionistaService from '../services/recepcionistaService.js';
 import jwt from 'jsonwebtoken';
 
@@ -65,9 +67,8 @@ class recepcionistaController {
     const { id } = req.params;
 
     try {
-      const recepcionista = await recepcionistaService.getRecepcionistaById(
-        Number(id),
-      );
+      // MUDANÇA: Removido Number()
+      const recepcionista = await recepcionistaService.getRecepcionistaById(id);
       if (!recepcionista) {
         return res
           .status(404)
@@ -87,17 +88,17 @@ class recepcionistaController {
     const newData = req.body;
 
     try {
-      const recepcionista = await recepcionistaService.getRecepcionistaById(
-        Number(id),
-      );
+      // MUDANÇA: Removido Number()
+      const recepcionista = await recepcionistaService.getRecepcionistaById(id);
       if (!recepcionista) {
         return res
           .status(404)
           .json({ message: 'Recepcionista não encontrado' });
       }
 
+      // MUDANÇA: Removido Number()
       const updatedRecepcionista =
-        await recepcionistaService.updateRecepcionista(Number(id), newData);
+        await recepcionistaService.updateRecepcionista(id, newData);
 
       const token = jwt.sign(
         {
@@ -128,16 +129,16 @@ class recepcionistaController {
     const { id } = req.params;
 
     try {
-      const recepcionista = await recepcionistaService.getRecepcionistaById(
-        Number(id),
-      );
+      // MUDANÇA: Removido Number()
+      const recepcionista = await recepcionistaService.getRecepcionistaById(id);
       if (!recepcionista) {
         return res
           .status(404)
           .json({ message: 'Recepcionista não encontrado' });
       }
 
-      await recepcionistaService.deleteRecepcionista(Number(id));
+      // MUDANÇA: Removido Number()
+      await recepcionistaService.deleteRecepcionista(id);
       res.status(200).json({ message: 'Recepcionista deletado com sucesso' });
     } catch (error) {
       console.error(error);

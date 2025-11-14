@@ -18,8 +18,9 @@ import {
 } from "@heroicons/react/24/outline";
 
 function ScheduleForm() {
-  const [pacienteId, setPacienteId] = useState<number | null>(null);
-  const [medicoId, setMedicoId] = useState<number | null>(null);
+  // MUDANÇA: IDs agora são string
+  const [pacienteId, setPacienteId] = useState<string | null>(null);
+  const [medicoId, setMedicoId] = useState<string | null>(null);
   const [date, setDate] = useState<Date | undefined>();
   const [horario, setHorario] = useState<string>("");
   const [descricao, setDescricao] = useState<string>("");
@@ -33,7 +34,7 @@ function ScheduleForm() {
       try {
         const dataFormatada = format(date, "yyyy-MM-dd");
         const response = await api.get(
-          `/horarios/disponivel/${medicoId}?data=${dataFormatada}`
+          `/api/clinica/horarios/disponivel/${medicoId}?data=${dataFormatada}`
         );
         setHorariosDisponiveis(response.data.horarios || []);
       } catch (error) {
@@ -52,14 +53,14 @@ function ScheduleForm() {
     }
     const dataFormatada = format(date, "yyyy-MM-dd");
     const consultaData = {
-      paciente_id: pacienteId,
-      medico_id: medicoId,
+      paciente_id: pacienteId, // ID é string
+      medico_id: medicoId,   // ID é string
       date_time: new Date(`${dataFormatada}T${horario}:00`).toISOString(),
       status: "agendado",
       description: descricao,
     };
     try {
-      const response = await api.post("/consultas", consultaData);
+      const response = await api.post("/api/clinica/consultas", consultaData);
       setDate(undefined);
       setHorario("");
       setDescricao("");
@@ -88,7 +89,7 @@ function ScheduleForm() {
               <SearchInput
                 SearchRole="pacientes"
                 placeholder="Digite para buscar um paciente..."
-                onSelect={(item) => setPacienteId(item.id)}
+                onSelect={(item) => setPacienteId(item.id)} // item.id agora é string
               />
             </div>
 
@@ -100,7 +101,7 @@ function ScheduleForm() {
               <SearchInput
                 SearchRole="medicos"
                 placeholder="Digite para buscar um médico..."
-                onSelect={(item) => setMedicoId(item.id)}
+                onSelect={(item) => setMedicoId(item.id)} // item.id agora é string
               />
             </div>
           </div>

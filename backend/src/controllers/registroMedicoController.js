@@ -1,3 +1,5 @@
+// 1146BN-nginx/backend/src/controllers/registroMedicoController.js
+
 import registroMedicoService from "../services/registroMedicoService.js";
 
 class registroMedicoController {
@@ -11,8 +13,8 @@ class registroMedicoController {
 
       const registro = await registroMedicoService.criarRegistro({
         consulta_id,
-        medico_id,
-        paciente_id,
+        medico_id,   // Já é String
+        paciente_id, // Já é String
         observacoes,
         diagnostico,
         tratamento,
@@ -54,7 +56,8 @@ class registroMedicoController {
   static async listarPorPaciente(req, res) {
     try {
       const { pacienteId } = req.params;
-      const registros = await registroMedicoService.listarPorPaciente(Number(pacienteId));
+      // MUDANÇA: Removido Number()
+      const registros = await registroMedicoService.listarPorPaciente(pacienteId);
 
       res.status(200).json(registros);
     } catch (error) {

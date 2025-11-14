@@ -31,7 +31,9 @@ function AccountDetails() {
       if (!userContext.user?.id) return;
 
       try {
-        const userResponse = await api.get(`/usuarios/${userContext.user.id}`);
+        // MUDANÇA: Corrigido endpoint da API (prefixo /api/clinica)
+        // O endpoint /usuarios/:id no backend já é inteligente e busca a especialidade
+        const userResponse = await api.get(`/api/clinica/usuarios/${userContext.user.id}`);
         const userData = userResponse.data;
         
         setUser(userData);
@@ -43,8 +45,11 @@ function AccountDetails() {
         const fullOriginalData = { ...userData };
 
         if (userData.role === 'medico') {
+          // O `userData` vindo de /usuarios/:id já contém a 'specialty'
           setSpecialty(userData.specialty || '');
-          const horarioResponse = await api.get(`/horarios/medico/${userContext.user.id}`);
+          
+          // MUDANÇA: Corrigido endpoint da API (prefixo /api/clinica)
+          const horarioResponse = await api.get(`/api/clinica/horarios/medico/${userContext.user.id}`);
           
           if (horarioResponse.data && horarioResponse.data.length > 0) {
             const horarioData = horarioResponse.data[0];
@@ -52,8 +57,9 @@ function AccountDetails() {
             setEndTime(horarioData.end_time);
             setHorarioId(horarioData.id);
             
-            fullOriginalData.start_time = horarioData.start_time;
-            fullOriginalData.end_time = horarioData.end_time;
+            // Armazena dados originais para o "cancelar"
+            (fullOriginalData as any).start_time = horarioData.start_time;
+            (fullOriginalData as any).end_time = horarioData.end_time;
           }
         }
         
@@ -72,6 +78,7 @@ function AccountDetails() {
     if (!userContext.user) return;
     const role = userContext.user.role;
 
+    // 1. Payload de Dados do Usuário (User + Medico/Paciente/etc)
     const userPayload: any = {
       name,
       birthdate: new Date(birthdate),
@@ -83,9 +90,16 @@ function AccountDetails() {
     }
 
     try {
-        const userEndpoint = role === 'medico' ? 'medicos' : (role === 'recepcionista' ? 'recepcionistas' : 'usuarios/admin');
-        const userResponse = await api.put(`/${userEndpoint}/${userContext.user.id}`, userPayload);
+        const userEndpoint = role === 'medico' 
+            ? `/api/clinica/medicos/${userContext.user.id}`
+            : (role === 'recepcionista' 
+                ? `/api/clinica/recepcionistas/${userContext.user.id}` 
+                : `/api/clinica/usuarios/admin/${userContext.user.id}`);
 
+        // O backend (ex: medicoController.js) já está programado para retornar um novo token
+        const userResponse = await api.put(userEndpoint, userPayload);
+
+        // Atualiza o token no AuthContext e no sessionStorage
         userContext.setUser({
             id: userResponse.data.user.id,
             name: userResponse.data.user.name,
@@ -95,6 +109,7 @@ function AccountDetails() {
         });
         setToken(userResponse.data.token);
 
+        // 2. Payload de Horários (Apenas para Médicos)
         if (role === 'medico' && startTime && endTime) {
             const horarioPayload = {
                 medico_id: userContext.user.id,
@@ -102,10 +117,13 @@ function AccountDetails() {
                 end_time: endTime,
             };
 
+            // MUDANÇA: Corrigidos endpoints da API (prefixo /api/clinica)
             if (horarioId) {
-                await api.put(`/horarios/${horarioId}`, horarioPayload);
+                // Atualiza horário existente
+                await api.put(`/api/clinica/horarios/${horarioId}`, horarioPayload);
             } else {
-                await api.post('/horarios', horarioPayload);
+                // Cria novo horário se não existia
+                await api.post('/api/clinica/horarios', horarioPayload);
             }
         }
 

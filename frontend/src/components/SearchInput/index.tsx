@@ -11,7 +11,7 @@ import {
 import api from '@/services/api';
 
 interface Usuario {
-  id: number;
+  id: string;
   name: string;
 }
 
@@ -43,7 +43,7 @@ function SearchInput({
       try {
         setLoading(true);
         const endpoint = SearchRole === 'admin' ? 'usuarios' : SearchRole;
-        const { data } = await api.get(`/${endpoint}?name=${name}`, {
+        const { data } = await api.get(`/api/clinica/${endpoint}?name=${name}`, {
           signal: controller.signal,
         });
 

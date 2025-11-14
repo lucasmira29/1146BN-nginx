@@ -70,7 +70,7 @@ export default function Agenda() {
         });
 
         if (user?.role === 'medico') {
-          params.append('medicoId', user.id.toString());
+          params.append('medicoId', user.id);
         }
         if (statusFilter) {
           params.append('status', statusFilter);
@@ -79,7 +79,7 @@ export default function Agenda() {
           params.append('paciente', debouncedPacienteFilter);
         }
 
-        const response = await api.get(`/consultas?${params.toString()}`);
+        const response = await api.get(`/api/clinica/consultas?${params.toString()}`);
         const data = response.data;
 
         const mappedEvents: ConsultaEvent[] = data.consultas.map(

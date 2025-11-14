@@ -4,7 +4,7 @@ export type Consulta = {
   status: string;
   description?: string;
   paciente: {
-    id: number;
+    id: string; 
     history: string | null;
     allergies: string | null;
     user: {
@@ -14,7 +14,7 @@ export type Consulta = {
     };
   };
   medico: {
-    id: number;
+    id: string;
     specialty: string;
     user: {
       name: string;

@@ -1,7 +1,7 @@
 import type { User } from './user';
 
 export type Medico = {
-  id: number;
+  id: string;
   specialty: string;
   user: User;
   horarios: [

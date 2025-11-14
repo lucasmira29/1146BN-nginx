@@ -33,8 +33,9 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
     };
 
     try {
-      const response = await api.post("/usuarios/login", userData);
-      const token = response.data.token;
+      const response = await api.post("/api/auth/login/password", userData);
+      const token = response.data.accessToken;
+      
       setEmail("");
       setPassword("");
       navigate("/dashboard/home");

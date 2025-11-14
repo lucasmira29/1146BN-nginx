@@ -1,3 +1,5 @@
+// 1146BN-nginx/backend/src/controllers/horarioDisponivelController.js
+
 import horarioMedicoService from "../services/horarioMedicoService.js";
 
 class HorarioDisponivelController {
@@ -10,7 +12,8 @@ class HorarioDisponivelController {
         return res.status(400).json({ message: 'medicoId e data são obrigatórios' });
       }
 
-      const horarios = await horarioMedicoService.getHorariosDisponiveis(Number(medicoId), data);
+      // MUDANÇA: Removido Number()
+      const horarios = await horarioMedicoService.getHorariosDisponiveis(medicoId, data);
 
       res.status(200).json({ data, horarios });
     } catch (err) {

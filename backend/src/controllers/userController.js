@@ -8,13 +8,13 @@ class userController {
       const { id } = req.params;
       const data = req.body;
 
-      const existingAdmin = await userService.getUserById(Number(id), data);
+      const existingAdmin = await userService.getUserById(id, data);
 
       if (!existingAdmin || existingAdmin.role !== 'admin') {
         return res.status(404).json({ message: 'Administrador não encontrado' });
       }
 
-      const updatedAdmin = await userService.updateAdmin(Number(id), data);
+      const updatedAdmin = await userService.updateAdmin(id, data);
 
       const newToken = jwt.sign(
         {
@@ -61,7 +61,7 @@ class userController {
     try {
       const { id } = req.params;
 
-      const user = await userService.getUserById(Number(id));
+      const user = await userService.getUserById(id);
       if (user) {
         return res.status(200).json(user);
       }
@@ -90,6 +90,10 @@ class userController {
         return res.status(404).json({ message: 'Usuário ou senha incorreto' });
       }
 
+      if (!user.password) {
+        return res.status(401).json({ message: 'Usuário ou senha incorreto' });
+      }
+
       const senhaValida = await bcrypt.compare(password, user.password);
       if (!senhaValida) {
         return res.status(401).json({ message: 'Usuário ou senha incorreto' });
@@ -103,7 +107,7 @@ class userController {
           role: user.role,
         },
         process.env.SECRET,
-        { expiresIn: '1h' }
+        { expiresIn: '1h' },
       );
 
       return res.status(200).json({

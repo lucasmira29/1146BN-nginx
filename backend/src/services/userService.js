@@ -1,6 +1,67 @@
+// 1146BN-nginx/backend/src/services/userService.js
+
 import prisma from '../config/dbConfig.js';
 
 class userService {
+
+  static async createOrUpdateUserFromEvent(eventData) {
+    const { userId, email, name, role } = eventData;
+
+    console.log(`[UserSync] Sincronizando usuário: ${email} (ID: ${userId})`);
+
+    return prisma.$transaction(async (tx) => {
+      
+
+      const user = await tx.user.upsert({
+        where: { id: userId },
+        update: {
+          name,
+          email,
+          role: role.toLowerCase(), 
+        },
+        create: {
+          id: userId,
+          name,
+          email,
+          document: 'PENDENTE',
+          birthdate: new Date('1900-01-01'), 
+          postal_code: '00000000',
+          role: role.toLowerCase(),
+        },
+      });
+
+      const roleLower = role.toLowerCase();
+      
+      if (roleLower === 'paciente') {
+        await tx.paciente.upsert({
+          where: { id: userId },
+          update: {},
+          create: { id: userId },
+        });
+      } else if (roleLower === 'medico') {
+        await tx.medico.upsert({
+          where: { id: userId },
+          update: {
+          }, 
+          create: { 
+            id: userId,
+            specialty: 'A definir',
+          },
+        });
+      } else if (roleLower === 'recepcionista') {
+        await tx.recepcionista.upsert({
+          where: { id: userId },
+          update: {},
+          create: { id: userId },
+        });
+      }
+      
+      console.log(`[UserSync] Usuário ${email} sincronizado com perfil de ${roleLower}.`);
+      return user;
+    });
+  }
+
+
   static async updateAdmin(id, newData) {
     return await prisma.user.update({
       where: { id, role: 'admin' },
@@ -33,7 +94,7 @@ class userService {
     return {
       ...user,
       specialty: user.Medico?.specialty || null,
-      Medico: undefined, // remove o campo Medico
+      Medico: undefined,
     };
   }
 

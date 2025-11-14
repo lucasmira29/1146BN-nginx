@@ -30,7 +30,10 @@ function PacientesPage() {
     async function fetchPacientes() {
       setIsLoading(true);
       try {
-        const response = await api.get(`/pacientes?page=${page}&limit=9`);
+        // MUDANÇA: Adicionado prefixo /api/clinica
+        const response = await api.get(
+          `/api/clinica/pacientes?page=${page}&limit=9`
+        );
         setPacienteData(response.data.pacientes);
         setTotalPages(response.data.totalPages);
       } catch (error) {
@@ -54,9 +57,13 @@ function PacientesPage() {
     if (endPage - startPage + 1 < maxPagesToShow) {
       startPage = Math.max(1, endPage - maxPagesToShow + 1);
     }
-    
+
     if (startPage > 1) {
-      pageLinks.push(<PaginationItem key="start-ellipsis"><PaginationEllipsis /></PaginationItem>);
+      pageLinks.push(
+        <PaginationItem key="start-ellipsis">
+          <PaginationEllipsis />
+        </PaginationItem>
+      );
     }
 
     for (let i = startPage; i <= endPage; i++) {
@@ -78,7 +85,11 @@ function PacientesPage() {
     }
 
     if (endPage < totalPages) {
-      pageLinks.push(<PaginationItem key="end-ellipsis"><PaginationEllipsis /></PaginationItem>);
+      pageLinks.push(
+        <PaginationItem key="end-ellipsis">
+          <PaginationEllipsis />
+        </PaginationItem>
+      );
     }
 
     return (
@@ -88,7 +99,10 @@ function PacientesPage() {
             <PaginationItem>
               <PaginationPrevious
                 href="#"
-                onClick={(e) => { e.preventDefault(); if (page > 1) setPage(page - 1); }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (page > 1) setPage(page - 1);
+                }}
                 className={page === 1 ? 'pointer-events-none opacity-50' : ''}
               />
             </PaginationItem>
@@ -96,8 +110,13 @@ function PacientesPage() {
             <PaginationItem>
               <PaginationNext
                 href="#"
-                onClick={(e) => { e.preventDefault(); if (page < totalPages) setPage(page + 1); }}
-                className={page === totalPages ? 'pointer-events-none opacity-50' : ''}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (page < totalPages) setPage(page + 1);
+                }}
+                className={
+                  page === totalPages ? 'pointer-events-none opacity-50' : ''
+                }
               />
             </PaginationItem>
           </PaginationContent>
@@ -108,9 +127,9 @@ function PacientesPage() {
 
   const renderContent = () => {
     if (isLoading) {
-      return (
-        Array.from({ length: 9 }).map((_, index) => <SkeletonCard key={index} />)
-      );
+      return Array.from({ length: 9 }).map((_, index) => (
+        <SkeletonCard key={index} />
+      ));
     }
 
     if (pacienteData.length === 0) {

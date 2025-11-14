@@ -1,3 +1,5 @@
+// 1146BN-nginx/backend/src/controllers/horarioMedicoController.js
+
 import horarioMedicoService from '../services/horarioMedicoService.js';
 
 class HorarioMedicoController {
@@ -13,8 +15,8 @@ class HorarioMedicoController {
       }
 
       const data = {
-        medico_id,
-        start_time, 
+        medico_id, // Já é String, sem mudança necessária
+        start_time,  
         end_time,  
       };
 
@@ -37,7 +39,8 @@ class HorarioMedicoController {
   static async listarHorarioMedicoId(req, res) {
     try {
       const { id } = req.params;
-      const horario = await horarioMedicoService.getById(Number(id));
+      // MUDANÇA: Removido Number()
+      const horario = await horarioMedicoService.getById(id);
       if (!horario) {
         return res.status(200).json([]);
       }
@@ -53,7 +56,7 @@ class HorarioMedicoController {
       const { medico_id, start_time, end_time } = req.body;
 
       const data = {
-        medico_id,
+        medico_id, // Já é String
         start_time,
         end_time,
       };

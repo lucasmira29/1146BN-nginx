@@ -44,7 +44,7 @@ export default function MinhasConsultasPage() {
       setLoading(true);
       try {
         const params = new URLSearchParams({
-          medicoId: user!.id.toString(),
+          medicoId: user!.id, // ID já é string (UUID)
           page: page.toString(),
         });
 
@@ -55,7 +55,8 @@ export default function MinhasConsultasPage() {
           params.append('paciente', debouncedPacienteFilter);
         }
         
-        const response = await api.get(`consultas?${params.toString()}&limit=9`);
+        // MUDANÇA: Adicionado prefixo /api/clinica
+        const response = await api.get(`/api/clinica/consultas?${params.toString()}&limit=9`);
         
         setConsultas(response.data.consultas);
         setTotalPages(response.data.totalPage || 1);

@@ -7,9 +7,9 @@ export type AuthContextType = {
 }
 
 export type UserContextType = {
-  id: number;
+  id: string;
   name: string;
-  document: string;
-  email: string;
+  document: string; 
+  email: string;    
   role: string;
 }

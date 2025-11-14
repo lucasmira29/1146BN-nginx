@@ -1,3 +1,5 @@
+// 1146BN-nginx/backend/src/controllers/medicoController.js
+
 import medicoService from '../services/medicoService.js';
 import jwt from 'jsonwebtoken';
 
@@ -69,7 +71,8 @@ class medicoController {
   static async listarMedicoById(req, res) {
     try {
       const { id } = req.params;
-      const medico = await medicoService.getMedicoById(Number(id));
+      // MUDANÇA: Removido Number()
+      const medico = await medicoService.getMedicoById(id);
 
       if (!medico) {
         return res.status(404).json({ message: 'Médico não encontrado' });
@@ -87,13 +90,15 @@ class medicoController {
     const data = req.body;
 
     try {
-      const existingMedico = await medicoService.getMedicoById(Number(id));
+      // MUDANÇA: Removido Number()
+      const existingMedico = await medicoService.getMedicoById(id);
 
       if (!existingMedico) {
         return res.status(404).json({ message: 'Médico não encontrado' });
       }
 
-      const updatedMedico = await medicoService.updateMedico(Number(id), data);
+      // MUDANÇA: Removido Number()
+      const updatedMedico = await medicoService.updateMedico(id, data);
 
       const newToken = jwt.sign(
         {
@@ -127,13 +132,15 @@ class medicoController {
     const { id } = req.params;
 
     try {
-      const existingMedico = await medicoService.getMedicoById(Number(id));
+      // MUDANÇA: Removido Number()
+      const existingMedico = await medicoService.getMedicoById(id);
 
       if (!existingMedico) {
         return res.status(404).json({ message: 'Médico não encontrado' });
       }
 
-      await medicoService.deleteMedico(Number(id));
+      // MUDANÇA: Removido Number()
+      await medicoService.deleteMedico(id);
 
       res.status(200).json({ message: 'Médico deletado com sucesso' });
     } catch (error) {

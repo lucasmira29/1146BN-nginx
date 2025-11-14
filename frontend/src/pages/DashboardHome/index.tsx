@@ -7,7 +7,6 @@ import { ptBR } from 'date-fns/locale/pt-BR';
 import api from '@/services/api';
 import { AlertaHorarioPendente } from '@/components/AlertaHorarioPendente';
 
-// --- Ícones da biblioteca Heroicons ---
 import {
   CalendarDaysIcon,
   CheckBadgeIcon,
@@ -55,11 +54,13 @@ const getStatusBadgeStyles = (status: string) => {
 function DashboardHome() {
   const { user } = useAuth();
   const [consultasHoje, setConsultasHoje] = useState<Consulta[]>([]);
-  const [consultasRealizadas, setConsultasRealizadas] = useState<number | null>(0);
+  const [consultasRealizadas, setConsultasRealizadas] = useState<number | null>(
+    0
+  );
   const [totalConsultas, setTotalConsultas] = useState<number>(0);
   const [totalRealizadas, setTotalRealizadas] = useState<number>(0);
   const [totalCanceladas, setTotalCanceladas] = useState<number>(0);
-  
+
   const [horarioPendente, setHorarioPendente] = useState(false);
 
   useEffect(() => {
@@ -67,10 +68,15 @@ function DashboardHome() {
 
     const verificarHorarioMedico = async () => {
       try {
-        const response = await api.get(`/horarios/medico/${user.id}`);
+        // MUDANÇA: Adicionado prefixo /api/clinica
+        const response = await api.get(
+          `/api/clinica/horarios/medico/${user.id}`
+        );
         if (response.data.length === 0) {
           setHorarioPendente(true);
-          toast.warn('Ação necessária: Por favor, defina seu horário de trabalho.');
+          toast.warn(
+            'Ação necessária: Por favor, defina seu horário de trabalho.'
+          );
         }
       } catch (error) {
         console.error('Erro ao verificar horário do médico:', error);
@@ -84,11 +90,18 @@ function DashboardHome() {
         let res;
         if (user.role === 'medico') {
           verificarHorarioMedico();
-          res = await api.get(`consultas/?medicoId=${user.id}&data=${hojeInicio}`);
-          const totalRealizadas = await api.get(`consultas?medicoId=${user.id}&status=realizado`);
+          // MUDANÇA: Adicionado prefixo /api/clinica
+          res = await api.get(
+            `/api/clinica/consultas/?medicoId=${user.id}&data=${hojeInicio}`
+          );
+          // MUDANÇA: Adicionado prefixo /api/clinica
+          const totalRealizadas = await api.get(
+            `/api/clinica/consultas?medicoId=${user.id}&status=realizado`
+          );
           setConsultasRealizadas(totalRealizadas.data.total);
         } else if (user.role === 'recepcionista' || user.role === 'admin') {
-          res = await api.get(`consultas/?data=${hojeInicio}`);
+          // MUDANÇA: Adicionado prefixo /api/clinica
+          res = await api.get(`/api/clinica/consultas/?data=${hojeInicio}`);
         }
         if (res) setConsultasHoje(res.data.consultas || []);
       } catch (error) {
@@ -98,10 +111,11 @@ function DashboardHome() {
 
     const fetchTotais = async () => {
       try {
+        // MUDANÇA: Adicionado prefixo /api/clinica em todos
         const [resTotal, resRealizadas, resCanceladas] = await Promise.all([
-          api.get('/consultas/'),
-          api.get('/consultas/?status=realizado'),
-          api.get('/consultas/?status=cancelado'),
+          api.get('/api/clinica/consultas/'),
+          api.get('/api/clinica/consultas/?status=realizado'),
+          api.get('/api/clinica/consultas/?status=cancelado'),
         ]);
         setTotalConsultas(resTotal.data.total);
         setTotalRealizadas(resRealizadas.data.total);
@@ -128,14 +142,20 @@ function DashboardHome() {
 
   const getGreetingByRole = (role: string) => {
     switch (role) {
-      case 'admin': return 'Bem-vindo(a), Administrador(a)';
-      case 'medico': return 'Bem-vindo(a), Doutor(a)';
-      case 'recepcionista': return 'Bem-vindo(a), Recepcionista';
-      default: return 'Bem-vindo(a)';
+      case 'admin':
+        return 'Bem-vindo(a), Administrador(a)';
+      case 'medico':
+        return 'Bem-vindo(a), Doutor(a)';
+      case 'recepcionista':
+        return 'Bem-vindo(a), Recepcionista';
+      default:
+        return 'Bem-vindo(a)';
     }
   };
 
-  const dataHojeFormatada = format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR });
+  const dataHojeFormatada = format(new Date(), "EEEE, dd 'de' MMMM", {
+    locale: ptBR,
+  });
 
   // Variantes para animação da lista
   const listVariants = {
@@ -166,20 +186,23 @@ function DashboardHome() {
           {getGreetingByRole(user.role)} 👋
         </h2>
         <p className="text-base sm:text-lg text-gray-600 mt-1">
-          Que bom ter você aqui, <span className="font-semibold">{user.name}</span>!
+          Que bom ter você aqui,{' '}
+          <span className="font-semibold">{user.name}</span>!
         </p>
         <p className="text-sm text-gray-500 mt-2 capitalize">
           Hoje é {dataHojeFormatada}.
         </p>
       </motion.div>
-      
+
       {horarioPendente && <AlertaHorarioPendente />}
 
       {/* LAYOUT EM GRID PARA O CONTEÚDO PRINCIPAL */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* COLUNA PRINCIPAL (Consultas do Dia) */}
         <div className="lg:col-span-2">
-          {(user.role === 'medico' || user.role === 'recepcionista' || user.role === 'admin') && (
+          {(user.role === 'medico' ||
+            user.role === 'recepcionista' ||
+            user.role === 'admin') && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -208,13 +231,22 @@ function DashboardHome() {
                           <ClockIcon className="h-6 w-6" />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-800">{format(new Date(consulta.date_time), 'HH:mm')} - {consulta.paciente.user.name}</p>
+                          <p className="font-semibold text-gray-800">
+                            {format(new Date(consulta.date_time), 'HH:mm')} -{' '}
+                            {consulta.paciente.user.name}
+                          </p>
                           {user.role !== 'medico' && (
-                            <p className="text-sm text-gray-500">{consulta.medico.user.name}</p>
+                            <p className="text-sm text-gray-500">
+                              {consulta.medico.user.name}
+                            </p>
                           )}
                         </div>
                       </div>
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${getStatusBadgeStyles(consulta.status)}`}>
+                      <span
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${getStatusBadgeStyles(
+                          consulta.status
+                        )}`}
+                      >
                         {consulta.status}
                       </span>
                     </motion.li>
@@ -222,8 +254,12 @@ function DashboardHome() {
                 </motion.ul>
               ) : (
                 <div className="text-center py-10">
-                    <p className="text-gray-500">Nenhuma consulta agendada para hoje.</p>
-                    <p className="text-sm text-gray-400 mt-2">Aproveite para organizar suas tarefas!</p>
+                  <p className="text-gray-500">
+                    Nenhuma consulta agendada para hoje.
+                  </p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Aproveite para organizar suas tarefas!
+                  </p>
                 </div>
               )}
             </motion.div>
@@ -241,14 +277,18 @@ function DashboardHome() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-700">Total Realizadas</h3>
-                  <p className="text-xs text-gray-500">Seu histórico de atendimentos</p>
+                  <h3 className="text-base font-semibold text-gray-700">
+                    Total Realizadas
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    Seu histórico de atendimentos
+                  </p>
                 </div>
                 <div className="p-2 bg-green-100 rounded-lg">
                   <CheckBadgeIcon className="h-6 w-6 text-green-700" />
                 </div>
               </div>
-              <motion.p 
+              <motion.p
                 key={consultasRealizadas}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
@@ -272,16 +312,31 @@ function DashboardHome() {
               </h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="flex items-center text-sm font-medium text-gray-600"><ClockIcon className="h-5 w-5 mr-2 text-gray-400"/>Total de Consultas</p>
-                  <p className="text-lg font-bold text-gray-800">{totalConsultas}</p>
+                  <p className="flex items-center text-sm font-medium text-gray-600">
+                    <ClockIcon className="h-5 w-5 mr-2 text-gray-400" />
+                    Total de Consultas
+                  </p>
+                  <p className="text-lg font-bold text-gray-800">
+                    {totalConsultas}
+                  </p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="flex items-center text-sm font-medium text-green-700"><CheckCircleIcon className="h-5 w-5 mr-2"/>Realizadas</p>
-                  <p className="text-lg font-bold text-green-700">{totalRealizadas}</p>
+                  <p className="flex items-center text-sm font-medium text-green-700">
+                    <CheckCircleIcon className="h-5 w-5 mr-2" />
+                    Realizadas
+                  </p>
+                  <p className="text-lg font-bold text-green-700">
+                    {totalRealizadas}
+                  </p>
                 </div>
                 <div className="flex items-center justify-between">
-                  <p className="flex items-center text-sm font-medium text-red-600"><NoSymbolIcon className="h-5 w-5 mr-2"/>Canceladas</p>
-                  <p className="text-lg font-bold text-red-600">{totalCanceladas}</p>
+                  <p className="flex items-center text-sm font-medium text-red-600">
+                    <NoSymbolIcon className="h-5 w-5 mr-2" />
+                    Canceladas
+                  </p>
+                  <p className="text-lg font-bold text-red-600">
+                    {totalCanceladas}
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -294,12 +349,13 @@ function DashboardHome() {
               transition={{ delay: 0.5, duration: 0.5 }}
               className="p-6 bg-white rounded-2xl shadow-lg border border-gray-200"
             >
-               <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-2">
+              <h3 className="flex items-center text-xl font-semibold text-gray-800 mb-2">
                 <ShieldCheckIcon className="h-6 w-6 mr-3 text-indigo-600" />
                 Painel do Admin
               </h3>
               <p className="text-gray-600 text-sm">
-                Aqui você poderá em breve validar os cadastros de médicos e recepcionistas.
+                Aqui você poderá em breve validar os cadastros de médicos e
+                recepcionistas.
               </p>
             </motion.div>
           )}

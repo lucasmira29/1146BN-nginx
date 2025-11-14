@@ -1,3 +1,5 @@
+// 1146BN-nginx/backend/src/controllers/pacienteController.js
+
 import pacienteService from '../services/pacienteService.js';
 
 class pacienteController {
@@ -71,7 +73,8 @@ class pacienteController {
     const { id } = req.params;
 
     try {
-      const paciente = await pacienteService.getPacienteById(Number(id));
+      // MUDANÇA: Removido Number()
+      const paciente = await pacienteService.getPacienteById(id);
       if (!paciente) {
         return res.status(404).json({ message: 'Paciente não encontrado' });
       }
@@ -89,13 +92,15 @@ class pacienteController {
     const data = req.body;
   
     try {
-      const existingPaciente = await pacienteService.getPacienteById(Number(id));
+      // MUDANÇA: Removido Number()
+      const existingPaciente = await pacienteService.getPacienteById(id);
       
       if (!existingPaciente) {
         return res.status(404).json({ message: 'Paciente não encontrado' });
       }
   
-      const newData = await pacienteService.updatePaciente(Number(id), data);
+      // MUDANÇA: Removido Number()
+      const newData = await pacienteService.updatePaciente(id, data);
   
       return res.status(200).json(newData);
     } catch (error) {
@@ -109,13 +114,15 @@ class pacienteController {
     const { id } = req.params;
 
     try {
-      const existingPaciente = await pacienteService.getPacienteById(Number(id));
+      // MUDANÇA: Removido Number()
+      const existingPaciente = await pacienteService.getPacienteById(id);
 
       if (!existingPaciente) {
         return res.status(404).json({ message: 'Paciente não encontrado' });
       }
 
-      await pacienteService.deletePaciente(Number(id));
+      // MUDANÇA: Removido Number()
+      await pacienteService.deletePaciente(id);
 
       res.status(200).json({ message: "Paciente deletado com sucesso" });
 

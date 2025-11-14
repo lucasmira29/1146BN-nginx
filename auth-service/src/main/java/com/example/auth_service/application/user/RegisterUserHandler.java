@@ -33,11 +33,26 @@ public class RegisterUserHandler {
 
         var hashedPassword = passwordHasher.hash(request.password());
 
+  
+        RoleType userRole;
+        if (request.role() != null && !request.role().isBlank()) {
+            try {
+
+                userRole = RoleType.valueOf(request.role().toUpperCase());
+            } catch (IllegalArgumentException e) {
+
+                throw new IllegalArgumentException("Role inválido: " + request.role());
+            }
+        } else {
+ 
+            userRole = RoleType.PACIENTE;
+        }
+
         var user = User.create(
                 request.name(),
                 new Email(request.email()),
                 hashedPassword,
-                new Role(RoleType.PACIENTE));
+                new Role(userRole)); 
 
         user = userRepository.save(user);
 

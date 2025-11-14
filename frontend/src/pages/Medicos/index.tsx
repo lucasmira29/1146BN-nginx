@@ -17,7 +17,8 @@ function MedicosPage() {
   useEffect(() => {
     async function fetchMedicos() {
       try {
-        const response = await api.get('/medicos');
+        // MUDANÇA: Adicionado prefixo /api/clinica
+        const response = await api.get('/api/clinica/medicos');
         setMedicoData(response.data.medicos);
       } catch (error) {
         console.error(error);
@@ -32,15 +33,17 @@ function MedicosPage() {
 
   const renderContent = () => {
     if (medicoData === undefined) {
-      return (
-        Array.from({ length: 8 }).map((_, index) => <SkeletonCard key={index} />)
-      );
+      return Array.from({ length: 8 }).map((_, index) => (
+        <SkeletonCard key={index} />
+      ));
     }
 
     if (medicoData.length === 0) {
       return (
         <div className="col-span-full text-center py-10">
-          <p className="text-xl text-gray-600">Nenhum médico encontrado no momento.</p>
+          <p className="text-xl text-gray-600">
+            Nenhum médico encontrado no momento.
+          </p>
         </div>
       );
     }
