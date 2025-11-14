@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -9,6 +15,8 @@ import api from '@/services/api';
 import useAuth from '@/hooks/useAuthContext';
 import { setToken } from '@/utils/handleToken';
 import { toast } from 'react-toastify';
+
+import { formatDateBR } from '@/utils/formatters';
 
 function AccountDetails() {
   const [isEditing, setIsEditing] = useState(false);
@@ -30,43 +38,64 @@ function AccountDetails() {
     async function fetchData() {
       if (!userContext.user?.id) return;
 
+      const { role, id } = userContext.user;
+
+      let userEndpoint = '';
+
+      if (role === 'medico') {
+        userEndpoint = `/api/clinica/medicos/${id}`;
+      } else if (role === 'recepcionista') {
+        userEndpoint = `/api/clinica/recepcionistas/${id}`;
+      } else if (role === 'admin') {
+        userEndpoint = `/api/clinica/usuarios/${id}`;
+      } else if (role === 'paciente') {
+        userEndpoint = `/api/clinica/pacientes/${id}`;
+      } else {
+        toast.error('Role de usuário desconhecido.');
+        return;
+      }
+
       try {
-        // MUDANÇA: Corrigido endpoint da API (prefixo /api/clinica)
-        // O endpoint /usuarios/:id no backend já é inteligente e busca a especialidade
-        const userResponse = await api.get(`/api/clinica/usuarios/${userContext.user.id}`);
-        const userData = userResponse.data;
-        
+        const userResponse = await api.get(userEndpoint);
+
+        const userData = userResponse.data.user
+          ? userResponse.data.user
+          : userResponse.data;
+
+        if (role === 'medico' && userResponse.data.specialty) {
+          userData.specialty = userResponse.data.specialty;
+        }
+
         setUser(userData);
         setName(userData.name);
+        // O input type="date" requer o formato YYYY-MM-DD
         setBirthdate(userData.birthdate?.slice(0, 10) || '');
         setPhone(userData.phone || '');
         setPostalCode(userData.postal_code || '');
-        
+
         const fullOriginalData = { ...userData };
 
         if (userData.role === 'medico') {
-          // O `userData` vindo de /usuarios/:id já contém a 'specialty'
           setSpecialty(userData.specialty || '');
-          
-          // MUDANÇA: Corrigido endpoint da API (prefixo /api/clinica)
-          const horarioResponse = await api.get(`/api/clinica/horarios/medico/${userContext.user.id}`);
-          
+
+          const horarioResponse = await api.get(
+            `/api/clinica/horarios/medico/${userContext.user.id}`
+          );
+
           if (horarioResponse.data && horarioResponse.data.length > 0) {
             const horarioData = horarioResponse.data[0];
             setStartTime(horarioData.start_time);
             setEndTime(horarioData.end_time);
             setHorarioId(horarioData.id);
-            
-            // Armazena dados originais para o "cancelar"
+
             (fullOriginalData as any).start_time = horarioData.start_time;
             (fullOriginalData as any).end_time = horarioData.end_time;
           }
         }
-        
-        setOriginalUserData(fullOriginalData);
 
+        setOriginalUserData(fullOriginalData);
       } catch (error) {
-        console.error("Erro ao buscar dados da conta:", error);
+        console.error('Erro ao buscar dados da conta:', error);
         toast.error('Não foi possível carregar os dados da conta.');
       }
     }
@@ -74,11 +103,12 @@ function AccountDetails() {
     fetchData();
   }, [userContext.user?.id]);
 
+  // ... (código existente handleUpdate e handleCancel)
   async function handleUpdate() {
     if (!userContext.user) return;
+
     const role = userContext.user.role;
 
-    // 1. Payload de Dados do Usuário (User + Medico/Paciente/etc)
     const userPayload: any = {
       name,
       birthdate: new Date(birthdate),
@@ -90,68 +120,62 @@ function AccountDetails() {
     }
 
     try {
-        const userEndpoint = role === 'medico' 
-            ? `/api/clinica/medicos/${userContext.user.id}`
-            : (role === 'recepcionista' 
-                ? `/api/clinica/recepcionistas/${userContext.user.id}` 
-                : `/api/clinica/usuarios/admin/${userContext.user.id}`);
+      const userEndpoint =
+        role === 'medico'
+          ? `/api/clinica/medicos/${userContext.user.id}`
+          : role === 'recepcionista'
+          ? `/api/clinica/recepcionistas/${userContext.user.id}`
+          : `/api/clinica/usuarios/admin/${userContext.user.id}`;
 
-        // O backend (ex: medicoController.js) já está programado para retornar um novo token
-        const userResponse = await api.put(userEndpoint, userPayload);
+      const userResponse = await api.put(userEndpoint, userPayload);
 
-        // Atualiza o token no AuthContext e no sessionStorage
-        userContext.setUser({
-            id: userResponse.data.user.id,
-            name: userResponse.data.user.name,
-            document: userResponse.data.user.document,
-            email: userResponse.data.user.email,
-            role: userResponse.data.user.role,
-        });
-        setToken(userResponse.data.token);
+      userContext.setUser({
+        id: userResponse.data.user.id,
+        name: userResponse.data.user.name,
+        document: userResponse.data.user.document,
+        email: userResponse.data.user.email,
+        role: userResponse.data.user.role,
+      });
+      setToken(userResponse.data.token);
 
-        // 2. Payload de Horários (Apenas para Médicos)
-        if (role === 'medico' && startTime && endTime) {
-            const horarioPayload = {
-                medico_id: userContext.user.id,
-                start_time: startTime,
-                end_time: endTime,
-            };
+      if (role === 'medico' && startTime && endTime) {
+        const horarioPayload = {
+          medico_id: userContext.user.id,
+          start_time: startTime,
+          end_time: endTime,
+        };
 
-            // MUDANÇA: Corrigidos endpoints da API (prefixo /api/clinica)
-            if (horarioId) {
-                // Atualiza horário existente
-                await api.put(`/api/clinica/horarios/${horarioId}`, horarioPayload);
-            } else {
-                // Cria novo horário se não existia
-                await api.post('/api/clinica/horarios', horarioPayload);
-            }
+        if (horarioId) {
+          await api.put(`/api/clinica/horarios/${horarioId}`, horarioPayload);
+        } else {
+          await api.post('/api/clinica/horarios', horarioPayload);
         }
+      }
 
-        toast.success('Dados atualizados com sucesso!');
-        setIsEditing(false);
-
+      toast.success('Dados atualizados com sucesso!');
+      setIsEditing(false);
     } catch (error) {
-        console.error("Erro ao atualizar os dados:", error);
-        toast.error('Ocorreu um erro ao salvar as alterações.');
+      console.error('Erro ao atualizar os dados:', error);
+      toast.error('Ocorreu um erro ao salvar as alterações.');
     }
   }
 
   const handleCancel = () => {
     if (originalUserData) {
-        setName(originalUserData.name);
-        setBirthdate(originalUserData.birthdate?.slice(0, 10) || '');
-        setPhone(originalUserData.phone || '');
-        setPostalCode(originalUserData.postal_code || '');
-        
-        if (originalUserData.role === 'medico') {
-            setSpecialty(originalUserData.specialty || '');
+      setName(originalUserData.name);
+      setBirthdate(originalUserData.birthdate?.slice(0, 10) || '');
+      setPhone(originalUserData.phone || '');
+      setPostalCode(originalUserData.postal_code || '');
 
-            setStartTime((originalUserData as any).start_time || '');
-            setEndTime((originalUserData as any).end_time || '');
-        }
+      if (originalUserData.role === 'medico') {
+        setSpecialty(originalUserData.specialty || '');
+
+        setStartTime((originalUserData as any).start_time || '');
+        setEndTime((originalUserData as any).end_time || '');
       }
-      setIsEditing(false);
-  }
+    }
+    setIsEditing(false);
+  };
 
   return (
     user && (
@@ -164,20 +188,76 @@ function AccountDetails() {
         </CardHeader>
         <CardContent className="space-y-6">
           {/* ... Campos de usuário ... */}
-          <div><Label htmlFor="nome">Nome completo</Label><Input id="nome" value={name} onChange={(e) => setName(e.target.value)} disabled={!isEditing} /></div>
-          <div><Label htmlFor="email">E-mail</Label><Input id="email" type="email" value={user.email} disabled /></div>
-          <div><Label htmlFor="documento">CPF</Label><Input id="documento" value={user.document} disabled /></div>
-          <div><Label htmlFor="birthdate">Data de nascimento</Label><Input id="birthdate" type="date" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} disabled={!isEditing} /></div>
-          <div><Label htmlFor="telefone">Telefone</Label><Input id="telefone" value={phone} onChange={(e) => setPhone(e.target.value)} disabled={!isEditing} /></div>
-          <div><Label htmlFor="postal_code">CEP</Label><Input id="postal_code" value={postalCode} onChange={(e) => setPostalCode(e.target.value)} disabled={!isEditing} /></div>
+          <div>
+            <Label htmlFor="nome">Nome completo</Label>
+            <Input
+              id="nome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div>
+            <Label htmlFor="email">E-mail</Label>
+            <Input id="email" type="email" value={user.email} disabled />
+          </div>
+          <div>
+            <Label htmlFor="documento">CPF</Label>
+            <Input id="documento" value={user.document} disabled />
+          </div>
+
+          {/* --- CORREÇÃO: Lógica condicional para Data de Nascimento --- */}
+          <div>
+            <Label htmlFor="birthdate">Data de nascimento</Label>
+            {isEditing ? (
+              <Input
+                id="birthdate"
+                type="date"
+                value={birthdate} // Mantém o formato YYYY-MM-DD para o input
+                onChange={(e) => setBirthdate(e.target.value)}
+              />
+            ) : (
+              <Input
+                id="birthdate"
+                type="text"
+                value={formatDateBR(birthdate)} // Mostra dd/MM/yyyy quando desabilitado
+                disabled
+              />
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="telefone">Telefone</Label>
+            <Input
+              id="telefone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+          <div>
+            <Label htmlFor="postal_code">CEP</Label>
+            <Input
+              id="postal_code"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
 
           {userContext.user?.role === 'medico' && (
             <>
+              {/* ... (código existente da especialidade e horário) ... */}
               <div>
                 <Label htmlFor="especialidade">Especialidade</Label>
-                <Input id="especialidade" value={specialty || ''} onChange={(e) => setSpecialty(e.target.value)} disabled={!isEditing} />
+                <Input
+                  id="especialidade"
+                  value={specialty || ''}
+                  onChange={(e) => setSpecialty(e.target.value)}
+                  disabled={!isEditing}
+                />
               </div>
-              
+
               <div className="border-t pt-6">
                 <h3 className="text-lg font-medium">Horário de Trabalho</h3>
                 <p className="text-sm text-muted-foreground mb-4">
@@ -186,17 +266,30 @@ function AccountDetails() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="start_time">Início do Expediente</Label>
-                    <Input id="start_time" type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} disabled={!isEditing}/>
+                    <Input
+                      id="start_time"
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      disabled={!isEditing}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="end_time">Fim do Expediente</Label>
-                    <Input id="end_time" type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} disabled={!isEditing}/>
+                    <Input
+                      id="end_time"
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      disabled={!isEditing}
+                    />
                   </div>
                 </div>
               </div>
             </>
           )}
 
+          {/* ... (código existente dos botões) ... */}
           <div className="flex justify-end gap-4 pt-4">
             {isEditing && (
               <Button
@@ -216,9 +309,13 @@ function AccountDetails() {
               onClick={isEditing ? handleUpdate : () => setIsEditing(true)}
             >
               {isEditing ? (
-                <><Save className="w-4 h-4 mr-2" /> Salvar</>
+                <>
+                  <Save className="w-4 h-4 mr-2" /> Salvar
+                </>
               ) : (
-                <><Pen className="w-4 h-4 mr-2" /> Editar</>
+                <>
+                  <Pen className="w-4 h-4 mr-2" /> Editar
+                </>
               )}
             </Button>
           </div>

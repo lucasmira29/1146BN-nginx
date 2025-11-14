@@ -1,31 +1,41 @@
-// 1146BN-nginx/backend/src/services/userService.js
-
 import prisma from '../config/dbConfig.js';
 
 class userService {
 
   static async createOrUpdateUserFromEvent(eventData) {
-    const { userId, email, name, role } = eventData;
+    const { 
+      userId, 
+      email, 
+      name, 
+      role, 
+      document, 
+      birthdate, 
+      phone, 
+      postal_code 
+    } = eventData;
 
     console.log(`[UserSync] Sincronizando usuário: ${email} (ID: ${userId})`);
 
     return prisma.$transaction(async (tx) => {
       
-
       const user = await tx.user.upsert({
         where: { id: userId },
         update: {
           name,
           email,
-          role: role.toLowerCase(), 
+          role: role.toLowerCase(),
+          document,
+          birthdate: new Date(birthdate),
+          postal_code,
         },
         create: {
           id: userId,
           name,
           email,
-          document: 'PENDENTE',
-          birthdate: new Date('1900-01-01'), 
-          postal_code: '00000000',
+          document: document || 'PENDENTE',
+          birthdate: birthdate ? new Date(birthdate) : new Date('1900-01-01'),
+          phone: phone || null,
+          postal_code: postal_code || '00000000',
           role: role.toLowerCase(),
         },
       });

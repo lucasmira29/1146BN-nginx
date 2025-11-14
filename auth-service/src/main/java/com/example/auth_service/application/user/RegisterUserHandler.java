@@ -52,7 +52,12 @@ public class RegisterUserHandler {
                 request.name(),
                 new Email(request.email()),
                 hashedPassword,
-                new Role(userRole)); 
+                new Role(userRole),
+                request.document(),
+                request.birthdate(),
+                request.phone(),
+                request.postal_code()
+        ); 
 
         user = userRepository.save(user);
 
@@ -60,7 +65,11 @@ public class RegisterUserHandler {
             user.getId().value(),        
             user.getEmail().value(),     
             user.getName(),              
-            user.getRole().getValue().name() 
+            user.getRole().getValue().name(),
+            user.getDocument(),
+            user.getBirthdate(),
+            user.getPhone(),
+            user.getPostal_code()
         ));
 
         return UserResponse.from(user);

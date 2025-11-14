@@ -22,7 +22,7 @@ import {
 import { useNavigate } from 'react-router';
 import { useDebounce } from '@/hooks/useDebounce';
 import './agenda.css';
-import { formatPhone } from '@/utils/formatters';
+import { formatPhone, formatTimeBR, formatDateTimeBR } from '@/utils/formatters';
 
 type ConsultaEvent = EventInput & {
   extendedProps: {
@@ -116,16 +116,16 @@ export default function Agenda() {
 
     const dotColor =
       statusColorMap[status as keyof typeof statusColorMap] || 'bg-gray-400';
-    const hora = new Date(eventInfo.event.start!).toLocaleTimeString('pt-BR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    
+
+    const hora = formatTimeBR(eventInfo.event.start!); 
+
 
     return (
       <div className="flex items-center gap-2 px-1 py-0.5 box-border w-full">
         <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
         <span className="text-[12px] text-gray-600 sm:block hidden">
-          {hora}
+          {format(new Date(eventInfo.event.start!), "HH:mm")}
         </span>
         <span className="text-xs md:text-sm font-medium text-gray-800 truncate block max-w-full">
           {eventInfo.event.title}
@@ -151,6 +151,7 @@ export default function Agenda() {
 
   return (
     <div className="flex flex-col items-center justify-center w-full sm:p-6 p-0">
+      {/* ... (código existente do filtro) ... */}
       <div className="w-full max-w-4xl flex flex-col md:flex-row gap-4 mb-6">
         <Input
           placeholder="Filtrar por paciente"
@@ -263,7 +264,7 @@ export default function Agenda() {
             </p>
             <p>
               <strong>Data:</strong>{' '}
-              {new Date(String(selectedEvent.start)).toLocaleString('pt-BR')}
+              {formatDateTimeBR(String(selectedEvent.start))}
             </p>
           </div>
         )}

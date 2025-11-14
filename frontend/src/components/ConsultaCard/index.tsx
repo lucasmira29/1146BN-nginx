@@ -9,8 +9,7 @@ import {
   TriangleAlert, 
   ArrowRight 
 } from "lucide-react";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatDateBR, formatTimeBR } from "@/utils/formatters";
 import { useNavigate } from "react-router";
 import type { Consulta } from "@/types/consulta";
 
@@ -51,11 +50,11 @@ export default function ConsultaCard({ consulta }: Props) {
         <div className="space-y-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
-            <span>{format(dataConsulta, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</span>
+            <span>{formatDateBR(dataConsulta)}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
-            <span>{format(dataConsulta, "HH:mm")}</span>
+            <span>{formatTimeBR(dataConsulta)}</span>
           </div>
           {consulta.paciente?.history && (
             <div className="flex items-start gap-2">

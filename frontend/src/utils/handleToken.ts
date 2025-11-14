@@ -29,7 +29,7 @@ export function decodeToken(token: string): UserContextType {
   const user: UserContextType = {
     id: decoded.sub,            
     name: decoded.name,
-    role: decoded.roles[0],     
+    role: decoded.roles[0].toLowerCase(),     
     email: "",  
     document: "", 
   };

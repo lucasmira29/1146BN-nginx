@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import useAuth from '@/hooks/useAuthContext';
 import api from '@/services/api';
 import type { Consulta } from '@/types/consulta';
-import { formatPhone } from '@/utils/formatters';
+// --- CORREÇÃO: Importar as novas funções ---
+import { formatPhone, formatDateTimeBR } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -15,6 +16,7 @@ import { useNavigate, useParams } from 'react-router';
 import { toast } from 'react-toastify';
 
 function ConsultaDetails() {
+  // ... (código existente do state e useEffects)
   const { id } = useParams();
   const [consulta, setConsulta] = useState<Consulta>();
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -41,7 +43,6 @@ function ConsultaDetails() {
 
       try {
         const dataFormatada = format(novaData, 'yyyy-MM-dd');
-        // MUDANÇA: Adicionado prefixo /api/clinica
         const response = await api.get(
           `/api/clinica/horarios/disponivel/${consulta.medico.id}?data=${dataFormatada}`
         );
@@ -59,7 +60,6 @@ function ConsultaDetails() {
 
   async function fetchConsulta() {
     try {
-      // MUDANÇA: Adicionado prefixo /api/clinica
       const response = await api.get(`/api/clinica/consultas/${id}`);
       setConsulta(response.data);
     } catch (error) {
@@ -67,18 +67,17 @@ function ConsultaDetails() {
     }
   }
 
+  // ... (código existente das funções de CUD)
   async function confirmConsulta(id: string | undefined) {
     try {
       if (!id || !observacoes || !diagnostico || !tratamento) {
         return toast.warn('Campos obrigatórios faltando!');
       }
 
-      // MUDANÇA: Adicionado prefixo /api/clinica
       await api.put(`/api/clinica/consultas/${id}`, {
         status: 'realizado',
       });
 
-      // MUDANÇA: Adicionado prefixo /api/clinica
       await api.post(`/api/clinica/registros-medicos`, {
         consulta_id: id,
         medico_id: consulta?.medico.id,
@@ -100,7 +99,6 @@ function ConsultaDetails() {
     try {
       if (!id) return;
 
-      // MUDANÇA: Adicionado prefixo /api/clinica
       await api.put(`/api/clinica/consultas/${id}`, {
         status: 'cancelado',
       });
@@ -121,7 +119,6 @@ function ConsultaDetails() {
     try {
       const novaDataFormatada = format(novaData, 'yyyy-MM-dd');
 
-      // MUDANÇA: Adicionado prefixo /api/clinica
       await api.put(`/api/clinica/consultas/${id}`, {
         date_time: new Date(
           `${novaDataFormatada}T${novoHorario}:00`
@@ -138,6 +135,7 @@ function ConsultaDetails() {
     }
   }
 
+  // ... (código existente)
   const renderStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
       agendado: 'bg-blue-100 text-blue-800',
@@ -160,6 +158,7 @@ function ConsultaDetails() {
     consulta && (
       <>
         <div className="max-w-3xl mx-auto mt-10 p-8 border rounded-2xl shadow-md bg-white space-y-8">
+          {/* ... (código existente do botão voltar, título) ... */}
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-800 transition cursor-pointer"
@@ -180,7 +179,8 @@ function ConsultaDetails() {
               <div>
                 <p>
                   <span className="font-medium text-zinc-700">Data:</span>{' '}
-                  {consulta?.date_time}
+                  {/* --- CORREÇÃO: Usar formatDateTimeBR --- */}
+                  {formatDateTimeBR(consulta?.date_time)}
                 </p>
                 <p className={consulta.description ? '' : 'hidden'}>
                   <span className="font-medium text-zinc-700">Descrição:</span>{' '}
@@ -194,6 +194,7 @@ function ConsultaDetails() {
             </div>
           </div>
 
+          {/* ... (código existente de Paciente, Médico, Registros e Ações) ... */}
           <div className="grid w-full gap-3">
             <h2 className="text-lg font-semibold text-zinc-800">Paciente</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-zinc-600">
@@ -263,7 +264,7 @@ function ConsultaDetails() {
                       <span className="font-medium text-zinc-700">
                         Data de Registro:
                       </span>{' '}
-                      {new Date(registro.created_at).toLocaleString('pt-BR')}
+                      {formatDateTimeBR(registro.created_at)}
                     </p>
                     <p className="sm:col-span-2">
                       <span className="font-medium text-zinc-700">
@@ -323,8 +324,7 @@ function ConsultaDetails() {
           )}
         </div>
 
-        {/* Modais */}
-
+        {/* ... (código existente dos Modais) ... */}
         <Modal
           open={isOpen}
           onOpenChange={setIsOpen}

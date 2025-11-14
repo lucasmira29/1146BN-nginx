@@ -38,21 +38,44 @@ public class User {
     @AttributeOverride(name = "value", column = @Column(name = "role", nullable = false, length = 50))
     private Role role;
 
-    private User(UserId id, String name, Email email, String password, Role role) {
+    @Column(nullable = false, length = 11)
+    private String document;
+
+    @Column(nullable = false)
+    private String birthdate;
+
+    @Column(length = 15)
+    private String phone;
+    
+    @Column(name = "postal_code", length = 8)
+    private String postal_code;
+
+
+    private User(UserId id, String name, Email email, String password, Role role, String document, String birthdate, String phone, String postal_code) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
         this.role = role;
+
+        this.document = document;
+        this.birthdate = birthdate;
+        this.phone = phone;
+        this.postal_code = postal_code;
     }
 
-    public static User create(String name, Email email, String password, Role role) {
+    public static User create(String name, Email email, String password, Role role, String document, String birthdate, String phone, String postal_code) {
         return new User(
                 new UserId(UUID.randomUUID()),
                 name,
                 email,
                 password,
-                role);
+                role,
+                document,
+                birthdate,
+                phone,
+                postal_code
+        );
     }
 
     @Embeddable 

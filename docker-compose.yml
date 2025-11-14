@@ -97,6 +97,8 @@ services:
 
       - EUREKA_HOST=service-discovery
       - EUREKA_PORT=8080
+      - SECRET=secreto
+      
     networks:
       - app-network
     command: >
@@ -140,4 +142,3 @@ services:
       - frontend
     networks:
       - app-network
-      

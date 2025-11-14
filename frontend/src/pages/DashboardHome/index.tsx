@@ -6,6 +6,7 @@ import { format, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import api from '@/services/api';
 import { AlertaHorarioPendente } from '@/components/AlertaHorarioPendente';
+import { formatTimeBR } from '@/utils/formatters';
 
 import {
   CalendarDaysIcon,
@@ -18,6 +19,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface Consulta {
+  // ... (código existente)
   id: string;
   date_time: string;
   status: string;
@@ -38,7 +40,7 @@ interface Consulta {
   };
 }
 
-// Função auxiliar para estilizar o status da consulta
+// ... (código existente)
 const getStatusBadgeStyles = (status: string) => {
   switch (status.toLowerCase()) {
     case 'realizado':
@@ -52,6 +54,7 @@ const getStatusBadgeStyles = (status: string) => {
 };
 
 function DashboardHome() {
+  // ... (código existente do state e useEffect)
   const { user } = useAuth();
   const [consultasHoje, setConsultasHoje] = useState<Consulta[]>([]);
   const [consultasRealizadas, setConsultasRealizadas] = useState<number | null>(
@@ -68,7 +71,6 @@ function DashboardHome() {
 
     const verificarHorarioMedico = async () => {
       try {
-        // MUDANÇA: Adicionado prefixo /api/clinica
         const response = await api.get(
           `/api/clinica/horarios/medico/${user.id}`
         );
@@ -90,17 +92,14 @@ function DashboardHome() {
         let res;
         if (user.role === 'medico') {
           verificarHorarioMedico();
-          // MUDANÇA: Adicionado prefixo /api/clinica
           res = await api.get(
             `/api/clinica/consultas/?medicoId=${user.id}&data=${hojeInicio}`
           );
-          // MUDANÇA: Adicionado prefixo /api/clinica
           const totalRealizadas = await api.get(
             `/api/clinica/consultas?medicoId=${user.id}&status=realizado`
           );
           setConsultasRealizadas(totalRealizadas.data.total);
         } else if (user.role === 'recepcionista' || user.role === 'admin') {
-          // MUDANÇA: Adicionado prefixo /api/clinica
           res = await api.get(`/api/clinica/consultas/?data=${hojeInicio}`);
         }
         if (res) setConsultasHoje(res.data.consultas || []);
@@ -111,7 +110,6 @@ function DashboardHome() {
 
     const fetchTotais = async () => {
       try {
-        // MUDANÇA: Adicionado prefixo /api/clinica em todos
         const [resTotal, resRealizadas, resCanceladas] = await Promise.all([
           api.get('/api/clinica/consultas/'),
           api.get('/api/clinica/consultas/?status=realizado'),
@@ -132,6 +130,7 @@ function DashboardHome() {
     }
   }, [user]);
 
+  // ... (código existente)
   if (!user) {
     return (
       <h2 className="text-3xl text-center font-bold mt-10 text-red-600">
@@ -175,7 +174,7 @@ function DashboardHome() {
 
   return (
     <section className="min-h-screen bg-slate-50 p-4 sm:p-6 lg:p-8">
-      {/* CARD DE BOAS-VINDAS */}
+      {/* ... (código existente do Card de Boas-vindas) ... */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -196,9 +195,7 @@ function DashboardHome() {
 
       {horarioPendente && <AlertaHorarioPendente />}
 
-      {/* LAYOUT EM GRID PARA O CONTEÚDO PRINCIPAL */}
       <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* COLUNA PRINCIPAL (Consultas do Dia) */}
         <div className="lg:col-span-2">
           {(user.role === 'medico' ||
             user.role === 'recepcionista' ||
@@ -232,7 +229,8 @@ function DashboardHome() {
                         </div>
                         <div>
                           <p className="font-semibold text-gray-800">
-                            {format(new Date(consulta.date_time), 'HH:mm')} -{' '}
+                            {/* --- CORREÇÃO: Usar formatTimeBR --- */}
+                            {formatTimeBR(consulta.date_time)} -{' '}
                             {consulta.paciente.user.name}
                           </p>
                           {user.role !== 'medico' && (
@@ -266,7 +264,7 @@ function DashboardHome() {
           )}
         </div>
 
-        {/* COLUNA LATERAL (Cards de Estatísticas) */}
+        {/* ... (código existente da coluna lateral) ... */}
         <div className="space-y-8">
           {user.role === 'medico' && (
             <motion.div

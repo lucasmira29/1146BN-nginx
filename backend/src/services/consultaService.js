@@ -30,12 +30,12 @@ class consultaService {
 
     // filtro por ID do paciente
     if (filtros.pacienteId) {
-      where.paciente_id = Number(filtros.pacienteId);
+      where.paciente_id = filtros.pacienteId;
     }
 
     // filtro por ID do médico
     if (filtros.medicoId) {
-      where.medico_id = Number(filtros.medicoId);
+      where.medico_id = filtros.medicoId;
     }
     
     if (filtros.paciente) {

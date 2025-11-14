@@ -9,6 +9,11 @@ public record UserRequest (
     @NotBlank @Email String email,
     @NotBlank @Size(min = 8) String password,
     
-    String role 
+    String role, 
+    
+    @NotBlank String document,
+    @NotBlank String birthdate,
+    String phone,
+    @NotBlank String postal_code
 ){
 }
