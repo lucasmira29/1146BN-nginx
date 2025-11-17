@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import useAuth from '@/hooks/useAuthContext';
 import api from '@/services/api';
 import type { Consulta } from '@/types/consulta';
-// --- CORREÇÃO: Importar as novas funções ---
 import { formatPhone, formatDateTimeBR } from '@/utils/formatters';
 import { format } from 'date-fns';
 import { ArrowLeft, Check } from 'lucide-react';
@@ -16,7 +15,6 @@ import { useNavigate, useParams } from 'react-router';
 import { toast } from 'react-toastify';
 
 function ConsultaDetails() {
-  // ... (código existente do state e useEffects)
   const { id } = useParams();
   const [consulta, setConsulta] = useState<Consulta>();
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -67,7 +65,6 @@ function ConsultaDetails() {
     }
   }
 
-  // ... (código existente das funções de CUD)
   async function confirmConsulta(id: string | undefined) {
     try {
       if (!id || !observacoes || !diagnostico || !tratamento) {
@@ -135,7 +132,6 @@ function ConsultaDetails() {
     }
   }
 
-  // ... (código existente)
   const renderStatusBadge = (status: string) => {
     const statusColors: Record<string, string> = {
       agendado: 'bg-blue-100 text-blue-800',
@@ -158,7 +154,6 @@ function ConsultaDetails() {
     consulta && (
       <>
         <div className="max-w-3xl mx-auto mt-10 p-8 border rounded-2xl shadow-md bg-white space-y-8">
-          {/* ... (código existente do botão voltar, título) ... */}
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-sm text-zinc-600 hover:text-zinc-800 transition cursor-pointer"
@@ -179,7 +174,6 @@ function ConsultaDetails() {
               <div>
                 <p>
                   <span className="font-medium text-zinc-700">Data:</span>{' '}
-                  {/* --- CORREÇÃO: Usar formatDateTimeBR --- */}
                   {formatDateTimeBR(consulta?.date_time)}
                 </p>
                 <p className={consulta.description ? '' : 'hidden'}>
@@ -194,7 +188,6 @@ function ConsultaDetails() {
             </div>
           </div>
 
-          {/* ... (código existente de Paciente, Médico, Registros e Ações) ... */}
           <div className="grid w-full gap-3">
             <h2 className="text-lg font-semibold text-zinc-800">Paciente</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-zinc-600">
@@ -324,7 +317,6 @@ function ConsultaDetails() {
           )}
         </div>
 
-        {/* ... (código existente dos Modais) ... */}
         <Modal
           open={isOpen}
           onOpenChange={setIsOpen}

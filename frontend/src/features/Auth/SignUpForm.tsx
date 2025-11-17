@@ -21,25 +21,25 @@ import {
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { cpf } from 'cpf-cnpj-validator';
+
+import * as cpfCnpj from 'cpf-cnpj-validator';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import api from '@/services/api';
+import api from '../../services/api';
 import type { Role } from '@/types/user';
 import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { ArrowBigLeft } from 'lucide-react';
-import useAuth from '@/hooks/useAuthContext';
+import useAuth from '../../hooks/useAuthContext';
 
-// Schema continua o mesmo (correto)
-const formSchema = z.object({
+
+const baseSchema = z.object({
   name: z.string().min(3, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(8, 'Mínimo de 8 caracteres'),
   document: z
     .string()
     .min(11, 'CPF é obrigatório')
     .transform((val) => val.replace(/[.-]/g, ''))
-    .refine((val) => cpf.isValid(val), {
+    .refine((val) => cpfCnpj.cpf.isValid(val), {
       message: 'CPF inválido',
     }),
   birthdate: z.string().min(1, 'Data é obrigatória'),
@@ -47,32 +47,35 @@ const formSchema = z.object({
   postal_code: z.string().min(8, 'CEP é obrigatório'),
 });
 
-type FormData = z.infer<typeof formSchema>;
+const standardSchema = baseSchema.extend({
+  password: z.string().min(8, 'Mínimo de 8 caracteres'),
+});
+
+const pacienteSchema = baseSchema.extend({
+  password: z.string().optional(),
+});
+
+type FormData = z.infer<typeof standardSchema>;
 
 function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
+  const [searchParams] = useSearchParams();
+  const isPaciente = searchParams.get('type') === 'paciente';
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
   } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(isPaciente ? pacienteSchema : standardSchema),
   });
 
-  // MUDANÇA: Padrão agora é MEDICO, e o tipo não inclui 'PACIENTE'
   const [role, setRole] = useState<Role>('MEDICO');
-  const [searchParams] = useSearchParams();
-  const [tipoCadastro, setTipoCadastro] = useState<string | null>(null);
   const { user } = useAuth();
-
   const navigate = useNavigate();
 
   useEffect(() => {
-    const tipo = searchParams.get('type');
-
-    if (tipo === 'paciente') {
-      setTipoCadastro(tipo);
-
+    if (isPaciente) {
       if (!user) {
         toast.warn('Você precisa estar logado para cadastrar um paciente.');
         navigate('/login');
@@ -80,35 +83,35 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
         toast.warn('Você não tem permissão para cadastrar pacientes.');
         navigate('/dashboard/home');
       }
-    } else {
-      setTipoCadastro(null);
     }
-  }, [searchParams, navigate, user]);
+  }, [isPaciente, navigate, user]);
 
   const onSubmit = async (data: FormData) => {
     let roleParaEnviar: string;
+    let passwordParaEnviar = data.password;
 
-    if (tipoCadastro === 'paciente') {
+    if (isPaciente) {
       roleParaEnviar = 'PACIENTE';
+      passwordParaEnviar = Math.random().toString(36).slice(-8) + 'P@ciente123';
     } else {
-      // Usa a role do <Select> (Medico ou Recepcionista)
       roleParaEnviar = role;
     }
 
     const userData = {
       ...data,
+      password: passwordParaEnviar,
       birthdate: new Date(data.birthdate),
       role: roleParaEnviar,
     };
 
-    const endpoint = '/api/auth/users/register'; // Correto
+    const endpoint = '/api/auth/users/register';
 
     try {
       const response = await api.post(endpoint, userData);
       toast.success(response.data.message || 'Cadastro realizado com sucesso!');
       reset();
 
-      if (tipoCadastro === 'paciente') {
+      if (isPaciente) {
         navigate('/dashboard/pacientes');
       } else {
         navigate('/login');
@@ -128,7 +131,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
         <CardHeader>
           <CardTitle>Cadastro</CardTitle>
           <CardDescription>
-            {tipoCadastro === 'paciente'
+            {isPaciente
               ? 'Preencha os dados para criar a conta do paciente'
               : 'Preencha os dados abaixo para criar sua conta'}
           </CardDescription>
@@ -138,16 +141,13 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
             onSubmit={handleSubmit(onSubmit)}
             className="flex flex-col gap-6"
           >
-            {/* ... (Todos os campos Input de nome, email, senha, etc. continuam iguais) ... */}
             <div className="grid gap-3">
               <Label htmlFor="name">Nome completo</Label>
               <Input
                 id="name"
                 type="text"
                 placeholder={
-                  tipoCadastro === 'paciente'
-                    ? 'Digite o nome do paciente'
-                    : 'Digite seu nome'
+                  isPaciente ? 'Digite o nome do paciente' : 'Digite seu nome'
                 }
                 {...register('name')}
               />
@@ -162,9 +162,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
                 id="email"
                 type="email"
                 placeholder={
-                  tipoCadastro === 'paciente'
-                    ? 'Digite o email do paciente'
-                    : 'Digite seu email'
+                  isPaciente ? 'Digite o email do paciente' : 'Digite seu email'
                 }
                 {...register('email')}
               />
@@ -173,24 +171,22 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
               )}
             </div>
 
-            <div className="grid gap-3">
-              <Label htmlFor="password">Senha</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder={
-                  tipoCadastro === 'paciente'
-                    ? 'Crie uma senha temporária (mín. 8 caracteres)'
-                    : 'Digite sua senha (mín. 8 caracteres)'
-                }
-                {...register('password')}
-              />
-              {errors.password && (
-                <p className="text-sm text-red-500">
-                  {errors.password.message}
-                </p>
-              )}
-            </div>
+            {!isPaciente && (
+              <div className="grid gap-3">
+                <Label htmlFor="password">Senha</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Digite sua senha (mín. 8 caracteres)"
+                  {...register('password')}
+                />
+                {errors.password && (
+                  <p className="text-sm text-red-500">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="grid gap-3">
               <Label htmlFor="document">CPF</Label>
@@ -198,9 +194,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
                 id="document"
                 type="text"
                 placeholder={
-                  tipoCadastro === 'paciente'
-                    ? 'Digite o CPF do paciente'
-                    : 'Digite seu CPF'
+                  isPaciente ? 'Digite o CPF do paciente' : 'Digite seu CPF'
                 }
                 {...register('document')}
               />
@@ -227,7 +221,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
                 id="phone"
                 type="tel"
                 placeholder={
-                  tipoCadastro === 'paciente'
+                  isPaciente
                     ? 'Digite o telefone do paciente'
                     : 'Digite seu telefone'
                 }
@@ -244,9 +238,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
                 id="postal_code"
                 type="text"
                 placeholder={
-                  tipoCadastro === 'paciente'
-                    ? 'Digite o CEP do paciente'
-                    : 'Digite seu CEP'
+                  isPaciente ? 'Digite o CEP do paciente' : 'Digite seu CEP'
                 }
                 {...register('postal_code')}
               />
@@ -257,14 +249,13 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
               )}
             </div>
 
-            {/* Este seletor SÓ aparece no auto-cadastro público */}
-            {tipoCadastro !== 'paciente' && (
+            {!isPaciente && (
               <div className="grid gap-3">
                 <Label>Função</Label>
                 <Select
                   onValueChange={(value) => setRole(value as Role)}
                   required
-                  defaultValue="MEDICO" // MUDANÇA: Padrão é MEDICO
+                  defaultValue="MEDICO"
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Selecione sua função" />
@@ -285,7 +276,7 @@ function SignUpForm({ className, ...props }: React.ComponentProps<'div'>) {
               Cadastrar
             </Button>
 
-            {tipoCadastro !== 'paciente' ? (
+            {!isPaciente ? (
               <div className="mt-4 text-center text-sm">
                 Já possui uma conta?
                 <Link to="/login" className="underline underline-offset-4">
